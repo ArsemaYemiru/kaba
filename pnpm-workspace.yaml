@@ -1,0 +1,16 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+onlyBuiltDependencies:
+  - "@nestjs/core"
+  - "@prisma/engines"
+  - "@swc/core"
+  - "@tailwindcss/oxide"
+  - esbuild
+  - prisma
+  - sharp
+  - unrs-resolver
+
+ignoredBuiltDependencies:
+  - "@parcel/watcher"
