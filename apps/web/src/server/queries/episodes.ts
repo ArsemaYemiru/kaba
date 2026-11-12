@@ -56,7 +56,7 @@ export type EpisodeFilters = z.infer<typeof EpisodeFiltersSchema>;
 
 export async function listEpisodes(f: EpisodeFilters) {
   "use cache";
-  cacheTag(TAGS.episodes);
+  cacheTag(TAGS.episodes, TAGS.artists, TAGS.media);
   cacheLife("days");
 
   const q = f.q || undefined;
@@ -110,14 +110,14 @@ export async function listEpisodes(f: EpisodeFilters) {
 
 export async function latestEpisodes(take = 8) {
   "use cache";
-  cacheTag(TAGS.episodes);
+  cacheTag(TAGS.episodes, TAGS.artists, TAGS.media);
   cacheLife("days");
   return prisma.episode.findMany({ where: published, select: episodeCardSelect, orderBy: NEWEST, take });
 }
 
 export async function getEpisodeCard(id: string | null | undefined) {
   "use cache";
-  cacheTag(TAGS.episodes);
+  cacheTag(TAGS.episodes, TAGS.artists, TAGS.media);
   cacheLife("days");
   if (!id) return null;
   return prisma.episode.findFirst({ where: { id, ...published }, select: episodeCardSelect });
@@ -125,7 +125,7 @@ export async function getEpisodeCard(id: string | null | undefined) {
 
 export async function getEpisode(slug: string) {
   "use cache";
-  cacheTag(TAGS.episodes, TAGS.episode(slug), TAGS.media, TAGS.videos, TAGS.albums);
+  cacheTag(TAGS.episodes, TAGS.episode(slug), TAGS.media, TAGS.videos, TAGS.albums, TAGS.artists);
   cacheLife("days");
   return prisma.episode.findFirst({
     where: { slug, ...published },
@@ -155,7 +155,7 @@ export async function getEpisode(slug: string) {
 
 export async function moreEpisodes(excludeSlug: string, take = 4) {
   "use cache";
-  cacheTag(TAGS.episodes);
+  cacheTag(TAGS.episodes, TAGS.artists, TAGS.media);
   cacheLife("days");
   return prisma.episode.findMany({
     where: { ...published, slug: { not: excludeSlug } },
@@ -167,7 +167,7 @@ export async function moreEpisodes(excludeSlug: string, take = 4) {
 
 export async function episodeSlugs() {
   "use cache";
-  cacheTag(TAGS.episodes);
+  cacheTag(TAGS.episodes, TAGS.artists, TAGS.media);
   cacheLife("days");
   return prisma.episode.findMany({ where: published, select: { slug: true, updatedAt: true } });
 }

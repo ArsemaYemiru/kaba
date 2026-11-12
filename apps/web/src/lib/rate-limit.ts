@@ -20,6 +20,17 @@ export async function hit(key: string, limit: number, windowSeconds: number) {
   return { allowed: row.points <= limit, remaining: Math.max(0, limit - row.points), resetAt: row.expire };
 }
 
+/** Current count for a key without incrementing (0 when absent or expired). */
+export async function peek(key: string): Promise<number> {
+  const row = await prisma.rateLimit.findUnique({ where: { key } });
+  if (!row || !row.expire || row.expire < new Date()) return 0;
+  return row.points;
+}
+
+export async function reset(key: string): Promise<void> {
+  await prisma.rateLimit.deleteMany({ where: { key } });
+}
+
 /**
  * Client IP. Only a header our own proxy sets can be trusted: in production
  * Nginx overwrites X-Real-IP (restored from CF-Connecting-IP for Cloudflare

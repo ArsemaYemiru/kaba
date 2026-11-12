@@ -24,3 +24,15 @@ export async function gotoReady(page: Page, url: string) {
   await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
   return res;
 }
+
+/**
+ * Wait until a specific element is hydrated (React has attached its props).
+ * Streamed sections can hydrate after the layout's data-hydrated marker.
+ */
+export async function waitHydrated(locator: import("@playwright/test").Locator) {
+  await locator.first().waitFor({ state: "attached" });
+  await locator.first().page().waitForFunction(
+    (el) => !!el && Object.keys(el).some((k) => k.startsWith("__reactProps")),
+    await locator.first().elementHandle(),
+  );
+}

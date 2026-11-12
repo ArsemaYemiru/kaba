@@ -398,12 +398,24 @@ async function seedSettings(episodeIds: Map<string, string>, artistIds: Map<stri
     footer: { broadcastLine: "As seen on EBS TV" },
   });
 
-  const existing = await prisma.siteSettings.findUnique({ where: { id: 1 }, select: { id: true } });
-  await prisma.siteSettings.upsert({
-    where: { id: 1 },
-    update: {},
-    create: { id: 1, ...(data as unknown as Omit<Prisma.SiteSettingsCreateInput, "id">) },
-  });
+  const existing = await prisma.siteSettings.findUnique({ where: { id: 1 } });
+  if (!existing) {
+    await prisma.siteSettings.create({ data: { id: 1, ...(data as unknown as Omit<Prisma.SiteSettingsCreateInput, "id">) } });
+  } else {
+    // Create-only, except: re-link the sample hero poster / social image when
+    // they're empty (e.g. after "Remove sample data" followed by a re-seed).
+    const hero = existing.hero as Record<string, unknown>;
+    const seo = existing.seo as Record<string, unknown>;
+    if (!hero?.posterId || !seo?.ogImageId) {
+      await prisma.siteSettings.update({
+        where: { id: 1 },
+        data: {
+          hero: { ...hero, posterId: hero?.posterId || data.hero.posterId } as Prisma.InputJsonValue,
+          seo: { ...seo, ogImageId: seo?.ogImageId || data.seo.ogImageId } as Prisma.InputJsonValue,
+        },
+      });
+    }
+  }
   count("SiteSettings", !existing);
 }
 

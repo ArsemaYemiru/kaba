@@ -11,8 +11,9 @@ const env = getEnv();
 export const PASSWORD_MIN_LENGTH = 12;
 
 /**
- * Better Auth (spec §5). Phase 2 uses it for password hashing in the seed;
- * Phase 4 adds the login rate limit, session/role hooks and the admin UI.
+ * Better Auth (spec §5). Sign-in goes through our own Server Action (with the
+ * 5-per-15-min IP+email limit), so the public HTTP sign-in/sign-up endpoints
+ * are disabled. Deactivated users can't create sessions.
  */
 export const auth = betterAuth({
   appName: "Feta Show",
@@ -28,6 +29,22 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24,
+    // No cookie cache: every admin request re-reads the session from the DB,
+    // so role changes and deactivation apply immediately.
+  },
+  disabledPaths: ["/sign-in/email", "/sign-up/email", "/sign-in/social", "/sign-in/anonymous"],
+  databaseHooks: {
+    session: {
+      create: {
+        before: async (session) => {
+          const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { isActive: true } });
+          if (!user?.isActive) return false; // deactivated: no new sessions
+        },
+        after: async (session) => {
+          await prisma.user.update({ where: { id: session.userId }, data: { lastLoginAt: new Date() } });
+        },
+      },
+    },
   },
   user: {
     additionalFields: {
