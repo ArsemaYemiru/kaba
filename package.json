@@ -1,23 +1,24 @@
 {
-  "name": "kaba",
+  "name": "feta-show",
   "private": true,
   "packageManager": "pnpm@10.30.1",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "dev": "pnpm --parallel --filter web --filter api dev",
-    "dev:web": "pnpm --filter web dev",
-    "dev:api": "pnpm --filter api dev",
-    "build": "pnpm --filter api build && pnpm --filter web build",
-    "start": "pnpm --parallel --filter web --filter api start",
-    "lint": "pnpm -r lint",
-    "test": "pnpm --filter api test",
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "start": "pnpm --filter web start",
+    "lint": "pnpm --filter web lint",
+    "typecheck": "pnpm --filter web typecheck",
+    "test": "pnpm --filter web test",
+    "test:e2e": "pnpm --filter web test:e2e",
+    "screens": "pnpm --filter web screens",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
-    "db:generate": "pnpm --filter api prisma:generate",
-    "db:migrate": "pnpm --filter api prisma:migrate",
-    "db:studio": "pnpm --filter api prisma:studio",
-    "setup": "pnpm install && pnpm db:up && pnpm db:migrate"
+    "db:migrate": "pnpm --filter web db:migrate",
+    "db:seed": "pnpm --filter web db:seed",
+    "db:reset": "pnpm --filter web db:reset",
+    "db:studio": "pnpm --filter web db:studio"
   }
 }

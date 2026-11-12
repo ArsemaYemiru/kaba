@@ -1,26 +1,262 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+/* Dark only (spec §3.1): <html class="dark"> is always set, so shadcn dark: styles always apply. */
+@custom-variant dark (&:is(.dark *));
+
+/* ─────────────────────────────────────────────────────────────
+   Studio Night: Feta Show design tokens. Dark only, admin included.
+   ───────────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+
+  /* Brand tokens (spec §3.2) */
+  --bg: #0a0a0c;
+  --surface: #131317;
+  --surface-2: #1b1b21;
+  --line: #2a2a32;
+  --text: #f4f4f5;
+  --text-muted: #a1a1aa;
+  --gold: #ffb800;
+  --red: #ff3b4e;
+  --green: #1faa59;
+  --radius: 14px;
+
+  /* shadcn semantic tokens mapped onto the brand */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--gold);
+  --primary-foreground: var(--bg);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--surface-2);
+  --accent-foreground: var(--text);
+  --destructive: var(--red);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--gold);
+  --chart-1: var(--gold);
+  --chart-2: var(--red);
+  --chart-3: var(--green);
+  --chart-4: #7c7c8a;
+  --chart-5: #4a4a55;
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--gold);
+  --sidebar-primary-foreground: var(--bg);
+  --sidebar-accent: var(--surface-2);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--gold);
+
+  /* Film grain (SVG turbulence), used by .grain */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Brand utilities: bg-surface, text-gold, border-line, ... */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-gold: var(--gold);
+  --color-red: var(--red);
+  --color-green: var(--green);
+
+  /* Every stack ends in Noto Sans Ethiopic so Amharic always renders. */
+  --font-sans: var(--font-inter), var(--font-noto-ethiopic), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-unbounded), var(--font-noto-ethiopic), ui-sans-serif, system-ui, sans-serif;
+  --font-ethiopic: var(--font-noto-ethiopic), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-heading: var(--font-display);
+
+  /* Fluid type scale (spec §3.3) */
+  --text-hero: clamp(3.5rem, 2.2rem + 6.5vw, 6rem);
+  --text-hero--line-height: 0.95;
+  --text-h1: clamp(2.5rem, 2rem + 2.5vw, 3.5rem);
+  --text-h1--line-height: 1.05;
+  --text-h2: clamp(1.75rem, 1.45rem + 1.5vw, 2.25rem);
+  --text-h2--line-height: 1.15;
+  --text-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --text-body--line-height: 1.6;
+
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.3);
+  --radius-2xl: calc(var(--radius) * 1.7);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --animate-marquee: marquee var(--marquee-duration, 40s) linear infinite;
+  --animate-beam: beam 18s ease-in-out infinite alternate;
+  --animate-beam-slow: beam 26s ease-in-out infinite alternate-reverse;
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes beam {
+    from { transform: rotate(-14deg) translateX(-4%); }
+    to { transform: rotate(10deg) translateX(4%); }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply bg-background font-sans text-foreground;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply min-h-dvh bg-background text-body text-foreground antialiased;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* Visible gold focus ring everywhere (spec §10). */
+  :focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 3px;
+  }
+
+  /* Amharic: Ethiopic face first, roomier line-height (spec §3.3). */
+  :lang(am) {
+    font-family: var(--font-noto-ethiopic), var(--font-inter), sans-serif;
+    line-height: 1.7;
+  }
+  h1:lang(am),
+  h2:lang(am),
+  h3:lang(am),
+  .font-display:lang(am) {
+    line-height: 1.3;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--gold) 35%, transparent);
+    color: var(--text);
+  }
+}
+
+@layer utilities {
+  /* Film-grain overlay at ~3% (spec §3.2). Parent must be positioned. */
+  .grain {
+    position: relative;
+    isolation: isolate;
+  }
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: var(--grain);
+    opacity: 0.03;
+    mix-blend-mode: overlay;
+    z-index: 1;
+  }
+
+  .glow-gold {
+    background: radial-gradient(closest-side, color-mix(in oklab, var(--gold) 16%, transparent), transparent);
+  }
+  .glow-red {
+    background: radial-gradient(closest-side, color-mix(in oklab, var(--red) 30%, transparent), transparent);
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pause-on-hover:hover .animate-marquee,
+  .pause-on-hover:focus-within .animate-marquee {
+    animation-play-state: paused;
+  }
+}
+
+/* Reduced motion: kill CSS animations and transitions (spec §3.5). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Rich text from the CMS (sanitized server-side). */
+@layer components {
+  .prose-feta {
+    color: var(--text);
+    line-height: 1.75;
+  }
+  .prose-feta > * + * { margin-top: 1em; }
+  .prose-feta h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; line-height: 1.25; margin-top: 1.75em; }
+  .prose-feta h3 { font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; margin-top: 1.5em; }
+  .prose-feta a { color: var(--gold); text-decoration: underline; text-underline-offset: 3px; }
+  .prose-feta ul { list-style: disc; padding-left: 1.25em; }
+  .prose-feta ol { list-style: decimal; padding-left: 1.25em; }
+  .prose-feta li + li { margin-top: 0.4em; }
+  .prose-feta li::marker { color: var(--gold); }
+  .prose-feta strong { font-weight: 700; }
+  .prose-feta blockquote { border-left: 3px solid var(--gold); padding-left: 1em; color: var(--text-muted); font-style: italic; }
+  .prose-feta img { border-radius: var(--radius); }
+}
+
+/* Scroll reveal (see components/brand/reveal.tsx). */
+@layer utilities {
+  .reveal {
+    transition:
+      opacity 300ms ease-out,
+      transform 300ms ease-out;
+  }
+  .reveal[data-reveal="pending"] {
+    opacity: 0;
+    transform: translateY(18px);
+  }
 }
