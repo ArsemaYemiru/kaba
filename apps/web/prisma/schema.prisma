@@ -1,0 +1,463 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPER_ADMIN
+  EDITOR
+}
+
+enum Status {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ArtistCategory {
+  SINGER
+  MUSICIAN
+  ACTOR
+  COMEDIAN
+  DANCER
+  PRODUCER_DJ
+  HOST_MEDIA
+  OTHER
+}
+
+enum EpisodeType {
+  GAME_SHOW
+  HOLIDAY_SPECIAL
+  PERFORMANCE
+  BEHIND_THE_SCENES
+}
+
+enum VideoType {
+  FULL_EPISODE
+  HIGHLIGHT
+  PERFORMANCE
+  BEHIND_THE_SCENES
+  INTERVIEW
+}
+
+enum VideoSource {
+  NONE
+  YOUTUBE
+  UPLOAD
+}
+
+enum Side {
+  A
+  B
+}
+
+enum SubmissionType {
+  CONTESTANT
+  AUDIENCE
+  SPONSOR
+}
+
+enum SubmissionStatus {
+  NEW
+  REVIEWED
+  SHORTLISTED
+  ARCHIVED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+// ───────── Better Auth (core + admin plugin) ─────────
+model User {
+  id                 String    @id @default(cuid())
+  name               String
+  email              String    @unique
+  emailVerified      Boolean   @default(false)
+  image              String?
+  role               Role      @default(EDITOR)
+  banned             Boolean   @default(false) // admin plugin
+  banReason          String?
+  banExpires         DateTime?
+  mustChangePassword Boolean   @default(true)
+  isActive           Boolean   @default(true)
+  lastLoginAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  sessions  Session[]
+  accounts  Account[]
+  media     Media[]       @relation("MediaUploader")
+  newsPosts NewsPost[]
+  activity  ActivityLog[]
+
+  @@map("user")
+}
+
+model Session {
+  id             String   @id @default(cuid())
+  token          String   @unique
+  expiresAt      DateTime
+  ipAddress      String?
+  userAgent      String?
+  impersonatedBy String?
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  password              String?
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+// App-level rate limiting (login failures, join forms, uploads). Postgres-backed
+// so limits survive restarts. D-9.
+model RateLimit {
+  key    String    @id
+  points Int
+  expire DateTime?
+}
+
+// ───────── Content ─────────
+model Media {
+  id           String    @id @default(cuid())
+  type         MediaType
+  storageKey   String    @unique // random UUID-based key
+  url          String
+  variants     Json? // { "400": key, "800": key, "1600": key }
+  mimeType     String
+  sizeBytes    Int
+  width        Int?
+  height       Int?
+  durationSec  Float?
+  blurDataUrl  String?
+  alt          String    @default("") // required for IMAGE (enforced in Zod)
+  caption      String?
+  credit       String?
+  tags         String[]
+  isSample     Boolean   @default(false)
+  uploadedById String?
+  uploadedBy   User?     @relation("MediaUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  artistPortraits Artist[]       @relation("ArtistPortrait")
+  artistCovers    Artist[]       @relation("ArtistCover")
+  artistGallery   ArtistMedia[]
+  episodeVideos   Episode[]      @relation("EpisodeVideo")
+  episodeThumbs   Episode[]      @relation("EpisodeThumb")
+  episodeGallery  EpisodeMedia[]
+  videoFiles      Video[]        @relation("VideoFile")
+  videoPosters    Video[]        @relation("VideoPoster")
+  albumCovers     Album[]
+  albumItems      AlbumItem[]
+  newsCovers      NewsPost[]
+
+  @@index([type, createdAt])
+}
+
+model Artist {
+  id             String           @id @default(cuid())
+  slug           String           @unique
+  nameEn         String
+  nameAm         String?
+  stageName      String?
+  legalNameEn    String?
+  legalNameAm    String?
+  isGroup        Boolean          @default(false) // D-11: Jano Band → MusicGroup JSON-LD
+  categories     ArtistCategory[]
+  shortBioEn     String?
+  shortBioAm     String?
+  bioEn          String? // sanitized HTML
+  bioAm          String?
+  birthYear      Int?
+  deathYear      Int?
+  yearsActive    String? // free text, e.g. "2012" → rendered "Active since 2012"
+  genres         String[]
+  notableWorks   Json             @default("[]") // [{ title, year?, type? }]
+  socialLinks    Json             @default("[]") // [{ platform, url }]
+  portraitId     String?
+  portrait       Media?           @relation("ArtistPortrait", fields: [portraitId], references: [id], onDelete: SetNull)
+  coverId        String?
+  cover          Media?           @relation("ArtistCover", fields: [coverId], references: [id], onDelete: SetNull)
+  isLegend       Boolean          @default(false)
+  featured       Boolean          @default(false)
+  status         Status           @default(DRAFT)
+  sortOrder      Int              @default(0)
+  seoTitle       String?
+  seoDescription String?
+  isSample       Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  gallery     ArtistMedia[]
+  appearances EpisodeParticipant[]
+  videos      VideoArtist[]
+
+  @@index([status, featured])
+  @@index([isLegend])
+  @@index([createdAt])
+}
+
+model ArtistMedia {
+  artistId  String
+  mediaId   String
+  sortOrder Int    @default(0)
+  artist    Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  media     Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([artistId, mediaId])
+}
+
+model Episode {
+  id            String      @id @default(cuid())
+  slug          String      @unique
+  titleEn       String
+  titleAm       String?
+  season        Int?
+  episodeNumber Int?
+  type          EpisodeType @default(GAME_SHOW)
+  airDate       DateTime?   @db.Date
+  descriptionEn String?
+  descriptionAm String?
+  videoSource   VideoSource @default(NONE)
+  youtubeUrl    String?
+  videoMediaId  String?
+  videoMedia    Media?      @relation("EpisodeVideo", fields: [videoMediaId], references: [id], onDelete: SetNull)
+  thumbnailId   String?
+  thumbnail     Media?      @relation("EpisodeThumb", fields: [thumbnailId], references: [id], onDelete: SetNull)
+  winnerSide    Side?
+  isTie         Boolean     @default(false)
+  featured      Boolean     @default(false)
+  status        Status      @default(DRAFT)
+  isSample      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  participants EpisodeParticipant[]
+  rounds       EpisodeRound[]
+  gallery      EpisodeMedia[]
+  videos       Video[]
+  albums       Album[]
+
+  @@index([status, type])
+  @@index([featured])
+  @@index([createdAt])
+}
+
+model EpisodeParticipant {
+  id        String  @id @default(cuid())
+  episodeId String
+  episode   Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  side      Side
+  artistId  String?
+  artist    Artist? @relation(fields: [artistId], references: [id], onDelete: SetNull)
+  guestName String?
+  order     Int     @default(0)
+
+  // "exactly one of artistId / guestName": Zod + a raw-SQL CHECK in the migration. D-10.
+  @@index([episodeId])
+  @@index([artistId])
+}
+
+model EpisodeRound {
+  id        String  @id @default(cuid())
+  episodeId String
+  episode   Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  order     Int
+  nameEn    String
+  nameAm    String?
+  scoreA    Int?
+  scoreB    Int?
+
+  @@index([episodeId, order])
+}
+
+model EpisodeMedia {
+  episodeId String
+  mediaId   String
+  sortOrder Int     @default(0)
+  episode   Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  media     Media   @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([episodeId, mediaId])
+}
+
+model Video {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  titleEn     String
+  titleAm     String?
+  type        VideoType
+  source      VideoSource   @default(NONE)
+  youtubeUrl  String?
+  mediaId     String?
+  media       Media?        @relation("VideoFile", fields: [mediaId], references: [id], onDelete: SetNull)
+  captionsUrl String? // WebVTT for uploaded video (spec §10)
+  posterId    String?
+  poster      Media?        @relation("VideoPoster", fields: [posterId], references: [id], onDelete: SetNull)
+  episodeId   String?
+  episode     Episode?      @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+  featured    Boolean       @default(false)
+  status      Status        @default(DRAFT)
+  publishedAt DateTime?
+  isSample    Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  artists     VideoArtist[]
+
+  @@index([status, type])
+  @@index([featured])
+  @@index([createdAt])
+}
+
+model VideoArtist {
+  videoId  String
+  artistId String
+  video    Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, artistId])
+  @@index([artistId])
+}
+
+model Album {
+  id            String      @id @default(cuid())
+  slug          String      @unique
+  titleEn       String
+  titleAm       String?
+  descriptionEn String?
+  descriptionAm String?
+  coverId       String?
+  cover         Media?      @relation(fields: [coverId], references: [id], onDelete: SetNull)
+  episodeId     String?
+  episode       Episode?    @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+  status        Status      @default(DRAFT)
+  isSample      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  items         AlbumItem[]
+
+  @@index([status])
+}
+
+model AlbumItem {
+  id        String  @id @default(cuid())
+  albumId   String
+  album     Album   @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media   @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  sortOrder Int     @default(0)
+  caption   String?
+
+  @@index([albumId, sortOrder])
+}
+
+model NewsPost {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  titleEn     String
+  titleAm     String?
+  excerptEn   String?
+  excerptAm   String?
+  bodyEn      String // sanitized HTML
+  bodyAm      String?
+  coverId     String?
+  cover       Media?    @relation(fields: [coverId], references: [id], onDelete: SetNull)
+  tags        String[]
+  featured    Boolean   @default(false)
+  status      Status    @default(DRAFT)
+  publishedAt DateTime? // future date + PUBLISHED = scheduled (D-12)
+  authorId    String?
+  author      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  isSample    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([featured])
+}
+
+model Submission {
+  id        String           @id @default(cuid())
+  type      SubmissionType
+  status    SubmissionStatus @default(NEW)
+  name      String
+  email     String?
+  phone     String? // E.164
+  payload   Json
+  notes     String?
+  ipHash    String // HMAC(ip, BETTER_AUTH_SECRET); raw IPs never stored
+  isSample  Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([type, status, createdAt])
+}
+
+model SiteSettings {
+  id        Int      @id @default(1) // single row
+  branding  Json // { logoId? }
+  hero      Json // { titleEn, taglineEn, taglineAm, videoId?, posterId?, ctas[] }
+  ticker    Json // string[]
+  featured  Json // { episodeId?, artistIds[] }
+  social    Json // { telegram?, tiktok?, youtube?, instagram?, facebook?, x? }
+  contact   Json // { email?, phone? }
+  sponsors  Json // [{ name, logoId, url? }]
+  seo       Json // { title, description, ogImageId? }
+  about     Json // { storyEn, storyAm?, faq[], team[] }
+  footer    Json // { textEn?, textAm?, broadcastLine }
+  updatedAt DateTime @updatedAt
+  // Each Json column is parsed through its own Zod schema on read and write.
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String // login | create | update | publish | unpublish | delete | ...
+  entityType String
+  entityId   String?
+  meta       Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@index([userId])
+}

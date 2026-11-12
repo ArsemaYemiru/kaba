@@ -15,7 +15,15 @@ next-env.d.ts
 !.env.example
 
 # prisma generated client
-apps/api/src/generated
+apps/web/src/generated
+
+# local media storage
+apps/web/storage
+
+# tests
+apps/web/test-results
+apps/web/playwright-report
+apps/web/blob-report
 
 # misc
 .DS_Store

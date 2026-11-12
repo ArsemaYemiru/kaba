@@ -1,0 +1,18 @@
+{
+  "_note": "All Amharic UI copy lives in this file so a native speaker can review it in one place. Needs native review before launch.",
+  "brand": {
+    "name": "ፈታ ሾው",
+    "wordmark": "ፈታ",
+    "tagline": "ሁለት ኮከቦች። አንድ መድረክ።"
+  },
+  "nav": {
+    "home": "ዋና ገጽ",
+    "episodes": "ክፍሎች",
+    "artists": "አርቲስቶች",
+    "videos": "ቪዲዮዎች",
+    "gallery": "ፎቶዎች",
+    "news": "ዜና",
+    "about": "ስለ እኛ",
+    "join": "ይቀላቀሉን"
+  }
+}
