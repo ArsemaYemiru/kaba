@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function VideosPage({ params, searchParams }: PageProps<"/[locale]/videos">) {
+  await connection();
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("videos");

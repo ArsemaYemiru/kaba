@@ -1,0 +1,104 @@
+name: kaba-prod
+
+x-logging: &app-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-app-env: &app-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://kaba:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/kaba
+  BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET}
+  BETTER_AUTH_URL: ${PRODUCTION_URL:-http://13.140.175.12:3006}
+  NEXT_PUBLIC_SITE_URL: ${PRODUCTION_URL:-http://13.140.175.12:3006}
+  STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+  LOCAL_STORAGE_DIR: /app/apps/web/storage
+  R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+  R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+  R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+  R2_BUCKET: ${R2_BUCKET:-}
+  R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+  UPLOAD_MAX_IMAGE_MB: ${UPLOAD_MAX_IMAGE_MB:-10}
+  UPLOAD_MAX_VIDEO_MB: ${UPLOAD_MAX_VIDEO_MB:-1024}
+  ANALYTICS_PROVIDER: ${ANALYTICS_PROVIDER:-}
+  ANALYTICS_SITE_ID: ${ANALYTICS_SITE_ID:-}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    cpus: 0.5
+    mem_limit: 512m
+    logging: *app-logging
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kaba
+      POSTGRES_DB: kaba
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U kaba -d kaba"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  migrator:
+    image: ${IMAGE_PREFIX:?Set IMAGE_PREFIX}-tooling:${IMAGE_TAG:?Set IMAGE_TAG}
+    cpus: 0.5
+    mem_limit: 512m
+    logging: *app-logging
+    environment:
+      <<: *app-env
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@fetashow.com}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      SEED_EDITOR_EMAIL: ${SEED_EDITOR_EMAIL:-editor@fetashow.com}
+      SEED_EDITOR_PASSWORD: ${SEED_EDITOR_PASSWORD:-}
+    volumes:
+      - media:/app/apps/web/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: [tools]
+
+  web:
+    image: ${IMAGE_PREFIX:?Set IMAGE_PREFIX}-web:${IMAGE_TAG:?Set IMAGE_TAG}
+    cpus: 1.0
+    mem_limit: 1g
+    logging: *app-logging
+    restart: unless-stopped
+    environment: *app-env
+    volumes:
+      - media:/app/apps/web/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 12
+
+  proxy:
+    image: nginx:stable-alpine
+    cpus: 0.25
+    mem_limit: 128m
+    logging: *app-logging
+    restart: unless-stopped
+    ports:
+      - "${WEB_BIND_IP:-0.0.0.0}:${WEB_PORT:-3006}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -qO-, http://127.0.0.1/api/health]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  pgdata:
+  media:

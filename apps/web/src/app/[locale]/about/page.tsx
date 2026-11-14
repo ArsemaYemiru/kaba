@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { ArrowRight, Flag, Swords, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AboutPage({ params }: PageProps<"/[locale]/about">) {
+  await connection();
   const { locale } = await params;
   setRequestLocale(locale);
   const [t, settings] = await Promise.all([getTranslations("about"), getSettings()]);

@@ -1,6 +1,7 @@
 import { ArrowLeft, Images, PlayCircle } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { z } from "zod";
 import { ArtistCard } from "@/components/brand/artist-card";
@@ -19,17 +20,13 @@ import { VideoGrid } from "@/components/site/video-grid";
 import { Link } from "@/i18n/navigation";
 import { toArtistCardProps } from "@/lib/artist-display";
 import { formatLifespan, formatYearsActive } from "@/lib/years";
-import { artistSlugs, getArtist, isOnFeta } from "@/server/queries/artists";
+import { getArtist, isOnFeta } from "@/server/queries/artists";
 
 const WorksSchema = z.array(z.object({ title: z.string(), year: z.number().int().optional(), type: z.string().optional() })).catch([]);
 const SocialSchema = z.array(z.object({ platform: z.string(), url: z.string().url() })).catch([]);
 
-export async function generateStaticParams() {
-  const rows = await artistSlugs();
-  return rows.map((r) => ({ slug: r.slug }));
-}
-
 export async function generateMetadata({ params }: PageProps<"/[locale]/artists/[slug]">): Promise<Metadata> {
+  await connection();
   const { slug } = await params;
   const a = await getArtist(slug);
   if (!a) return {};
@@ -41,6 +38,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/artists/
 }
 
 export default async function ArtistPage({ params }: PageProps<"/[locale]/artists/[slug]">) {
+  await connection();
   const { locale, slug } = await params;
   setRequestLocale(locale);
   const artist = await getArtist(slug);

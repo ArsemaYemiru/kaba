@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { connection } from "next/server";
 import { albumSlugs } from "@/server/queries/gallery";
 import { artistSlugs } from "@/server/queries/artists";
 import { episodeSlugs } from "@/server/queries/episodes";
@@ -7,6 +8,7 @@ import { newsSlugs } from "@/server/queries/news";
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  await connection();
   const [episodes, artists, albums, news] = await Promise.all([episodeSlugs(), artistSlugs(), albumSlugs(), newsSlugs()]);
   const page = (path: string, priority: number, lastModified?: Date): MetadataRoute.Sitemap[number] => ({
     url: `${SITE}${path}`,

@@ -1,0 +1,89 @@
+name: PR Checks
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Verify application
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      BETTER_AUTH_SECRET: ci-only-placeholder-at-least-32-characters
+      BETTER_AUTH_URL: http://localhost:3006
+      NEXT_PUBLIC_SITE_URL: http://localhost:3006
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Validate Prisma schema
+        run: pnpm --filter web exec prisma validate
+      - name: Lint
+        run: pnpm lint
+      - name: Check types
+        run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test
+      - uses: docker/setup-buildx-action@v3
+      - name: Build production web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runner
+          load: true
+          tags: kaba-ci-web:test
+          build-args: NEXT_PUBLIC_SITE_URL=http://localhost:3006
+          cache-from: type=gha,scope=kaba-web
+          cache-to: type=gha,mode=max,scope=kaba-web,ignore-error=true
+      - name: Build migration image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: tooling
+          load: true
+          tags: kaba-ci-tooling:test
+          cache-from: type=gha,scope=kaba-tooling
+          cache-to: type=gha,mode=max,scope=kaba-tooling,ignore-error=true
+      - name: Verify migrations and container readiness
+        env:
+          IMAGE_PREFIX: kaba-ci
+          IMAGE_TAG: test
+          POSTGRES_PASSWORD: ci-only-password
+          PRODUCTION_URL: http://localhost:3006
+          WEB_BIND_IP: 127.0.0.1
+        run: |
+          compose=(docker compose -p kaba-ci -f docker-compose.production.yml)
+          cp deploy/nginx.conf nginx.conf
+          "${compose[@]}" config --quiet
+          "${compose[@]}" up -d --wait --wait-timeout 120 postgres
+          "${compose[@]}" run --rm migrator
+          "${compose[@]}" up -d --wait --wait-timeout 180 web
+          "${compose[@]}" up -d --wait --wait-timeout 120 proxy
+          curl --fail --retry 5 --retry-delay 2 http://localhost:3006/api/health
+          curl --fail --output /dev/null http://localhost:3006/
+          curl --fail --output /dev/null http://localhost:3006/admin/login
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3006/artists/deployment-check-missing)" = 404
+      - name: Container diagnostics
+        if: failure()
+        env:
+          IMAGE_PREFIX: kaba-ci
+          IMAGE_TAG: test
+          POSTGRES_PASSWORD: ci-only-password
+        run: docker compose -p kaba-ci -f docker-compose.production.yml logs --tail=100
+      - name: Clean up CI containers
+        if: always()
+        env:
+          IMAGE_PREFIX: kaba-ci
+          IMAGE_TAG: test
+          POSTGRES_PASSWORD: ci-only-password
+        run: docker compose -p kaba-ci -f docker-compose.production.yml down --volumes

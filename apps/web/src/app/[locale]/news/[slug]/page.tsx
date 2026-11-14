@@ -1,25 +1,24 @@
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { Chip } from "@/components/brand/chip";
 import { TibebStrip } from "@/components/brand/tibeb";
 import { MediaImage } from "@/components/site/media-image";
 import { ShareButtons } from "@/components/site/share-buttons";
 import { Link } from "@/i18n/navigation";
-import { getNewsPost, newsSlugs } from "@/server/queries/news";
-
-export async function generateStaticParams() {
-  return (await newsSlugs()).map((n) => ({ slug: n.slug }));
-}
+import { getNewsPost } from "@/server/queries/news";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/news/[slug]">): Promise<Metadata> {
+  await connection();
   const { slug } = await params;
   const p = await getNewsPost(slug);
   return p ? { title: p.titleEn, description: p.excerptEn ?? undefined, alternates: { canonical: `/news/${slug}` } } : {};
 }
 
 export default async function NewsPostPage({ params }: PageProps<"/[locale]/news/[slug]">) {
+  await connection();
   const { locale, slug } = await params;
   setRequestLocale(locale);
   const post = await getNewsPost(slug);

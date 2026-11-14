@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { Crown, Tv } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -21,6 +22,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ArtistsPage({ params, searchParams }: PageProps<"/[locale]/artists">) {
+  await connection();
   const { locale } = await params;
   setRequestLocale(locale);
   const [t, ta, home, legends] = await Promise.all([

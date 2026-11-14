@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
@@ -20,6 +21,7 @@ export const metadata: Metadata = {
 const TYPES = ["GAME_SHOW", "HOLIDAY_SPECIAL", "PERFORMANCE", "BEHIND_THE_SCENES"] as const;
 
 export default async function EpisodesPage({ params, searchParams }: PageProps<"/[locale]/episodes">) {
+  await connection();
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("episodes");

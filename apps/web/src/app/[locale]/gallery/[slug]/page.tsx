@@ -1,24 +1,23 @@
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ComingSoon } from "@/components/brand/coming-soon";
 import { MasonryGallery } from "@/components/site/masonry-gallery";
 import { PageHeader } from "@/components/site/section-heading";
 import { Link } from "@/i18n/navigation";
-import { albumSlugs, getAlbum } from "@/server/queries/gallery";
-
-export async function generateStaticParams() {
-  return (await albumSlugs()).map((a) => ({ slug: a.slug }));
-}
+import { getAlbum } from "@/server/queries/gallery";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/gallery/[slug]">): Promise<Metadata> {
+  await connection();
   const { slug } = await params;
   const al = await getAlbum(slug);
   return al ? { title: al.titleEn, description: al.descriptionEn ?? undefined, alternates: { canonical: `/gallery/${slug}` } } : {};
 }
 
 export default async function AlbumPage({ params }: PageProps<"/[locale]/gallery/[slug]">) {
+  await connection();
   const { locale, slug } = await params;
   setRequestLocale(locale);
   const album = await getAlbum(slug);

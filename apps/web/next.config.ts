@@ -13,6 +13,8 @@ const r2 = (() => {
 })();
 
 const nextConfig: NextConfig = {
+  output: "standalone",
+  outputFileTracingRoot: import.meta.dirname + "/../..",
   cacheComponents: true,
   // Off: with it, unknown slugs stream a 200 fallback shell before notFound() runs (soft 404). D-37.
   partialPrefetching: false,
@@ -22,14 +24,6 @@ const nextConfig: NextConfig = {
     localPatterns: [{ pathname: "/media/**" }],
     remotePatterns: r2 ? [{ protocol: r2.protocol.replace(":", "") as "https" | "http", hostname: r2.hostname, pathname: "/**" }] : [],
     deviceSizes: [360, 640, 828, 1080, 1280, 1600, 1920],
-  },
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
   },
 };
 
