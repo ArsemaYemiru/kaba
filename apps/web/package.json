@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3000",
+    "dev": "next dev --webpack --port 3000",
     "build": "next build",
     "start": "next start --port 3000",
     "lint": "eslint .",
@@ -61,6 +61,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.65.0",
+    "@tailwindcss/postcss": "^4.3.5",
     "@tailwindcss/turbopack": "^4",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^24.19.2",

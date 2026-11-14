@@ -23,14 +23,6 @@ const nextConfig: NextConfig = {
     remotePatterns: r2 ? [{ protocol: r2.protocol.replace(":", "") as "https" | "http", hostname: r2.hostname, pathname: "/**" }] : [],
     deviceSizes: [360, 640, 828, 1080, 1280, 1600, 1920],
   },
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
-  },
 };
 
 export default withNextIntl(nextConfig);
