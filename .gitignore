@@ -30,3 +30,6 @@ apps/web/blob-report
 *.log
 coverage
 .vercel
+
+# Temporary production proxy config used by container smoke checks
+/nginx.conf

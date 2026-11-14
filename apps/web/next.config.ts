@@ -13,6 +13,8 @@ const r2 = (() => {
 })();
 
 const nextConfig: NextConfig = {
+  output: "standalone",
+  outputFileTracingRoot: import.meta.dirname + "/../..",
   cacheComponents: true,
   // Off: with it, unknown slugs stream a 200 fallback shell before notFound() runs (soft 404). D-37.
   partialPrefetching: false,

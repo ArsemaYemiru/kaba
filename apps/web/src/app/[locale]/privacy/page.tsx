@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { TriangleAlert } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -8,6 +9,7 @@ export const metadata: Metadata = { title: "Privacy", alternates: { canonical: "
 
 /** Placeholder policy (spec §4.9): must be reviewed by the client's legal adviser before launch. */
 export default async function PrivacyPage({ params }: PageProps<"/[locale]/privacy">) {
+  await connection();
   const { locale } = await params;
   setRequestLocale(locale);
   const [t, settings] = await Promise.all([getTranslations("privacy"), getSettings()]);

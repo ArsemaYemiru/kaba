@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ComingSoon } from "@/components/brand/coming-soon";
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function GalleryPage({ params }: PageProps<"/[locale]/gallery">) {
+  await connection();
   const { locale } = await params;
   setRequestLocale(locale);
   const [t, albums] = await Promise.all([getTranslations("gallery"), listAlbums()]);

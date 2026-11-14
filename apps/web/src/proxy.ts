@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import createMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
 import { auth } from "./lib/auth";
+import { publicDetailExists } from "./server/queries/public-route";
 
 const intl = createMiddleware(routing);
 
@@ -11,6 +12,21 @@ const SUPER_ADMIN_ONLY = ["/admin/users", "/admin/settings"];
 export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return withAdminHeaders(await adminGate(req));
+  const detail = /^\/(?:en\/)?(artists|episodes|gallery|news)\/([^/]+)\/?$/.exec(pathname);
+  if (detail) {
+    let slug: string;
+    try {
+      slug = decodeURIComponent(detail[2]!);
+    } catch {
+      return new NextResponse("Invalid URL", { status: 400 });
+    }
+    if (!(await publicDetailExists(detail[1]!, slug))) {
+      return new NextResponse(NOT_FOUND_HTML, {
+        status: 404,
+        headers: { "content-type": "text/html; charset=utf-8", "cache-control": "private, no-store" },
+      });
+    }
+  }
   return intl(req);
 }
 
@@ -69,6 +85,10 @@ const FORBIDDEN_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-
 main{max-width:28rem;text-align:center}.vs{display:inline-grid;place-items:center;width:64px;height:64px;border-radius:50%;background:#FF3B4E;color:#0A0A0C;font-weight:800;box-shadow:0 0 0 4px #FFB800}
 h1{font-size:1.6rem;margin:24px 0 8px}p{color:#A1A1AA;margin:0}a{display:inline-block;margin-top:24px;color:#FFB800;font-weight:600}a:focus-visible{outline:2px solid #FFB800;outline-offset:3px}</style></head>
 <body><main><span class="vs" aria-hidden="true">403</span><h1>403 · Not allowed</h1><p>This area is for super admins only. Ask a super admin if you need access.</p><a href="/admin">Back to dashboard</a></main></body></html>`;
+
+const NOT_FOUND_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>404 · Feta Show</title>
+<style>body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#0A0A0C;color:#F4F4F5;font:16px/1.6 system-ui,sans-serif}main{text-align:center;padding:24px}h1{color:#FFB800}a{color:#FFB800}</style></head>
+<body><main><h1>404 · Page not found</h1><p>This page is unavailable.</p><a href="/">Back to Feta Show</a></main></body></html>`;
 
 function withAdminHeaders(res: NextResponse) {
   res.headers.set("X-Frame-Options", "DENY");

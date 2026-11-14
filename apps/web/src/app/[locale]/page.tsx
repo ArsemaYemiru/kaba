@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { ArrowRight, Gift, Megaphone, Mic2, Ticket } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Chip } from "@/components/brand/chip";
@@ -22,6 +23,7 @@ import { getSettings } from "@/server/queries/settings";
 import { highlightVideos } from "@/server/queries/videos";
 
 export default async function HomePage({ params }: PageProps<"/[locale]">) {
+  await connection();
   const { locale } = await params;
   setRequestLocale(locale);
 

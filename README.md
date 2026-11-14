@@ -2,6 +2,8 @@
 
 Public site + admin CMS for Feta, the Ethiopian celebrity game show. Next.js 16 app in `apps/web` (pnpm workspace).
 
+Production deployment: [server setup, GitHub secrets, PR checks, and rollout](docs/DEPLOYMENT.md).
+
 > Work in progress, built phase by phase. Plan: [`docs/PLAN.md`](docs/PLAN.md) · decisions: [`DECISIONS.md`](DECISIONS.md). Full setup docs arrive in Phase 8.
 
 ```bash

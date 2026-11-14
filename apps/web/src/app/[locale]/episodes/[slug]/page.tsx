@@ -1,6 +1,7 @@
 import { ArrowLeft, Calendar, Hash, Trophy } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { Chip } from "@/components/brand/chip";
 import { PortraitFallback } from "@/components/brand/fallback";
@@ -16,14 +17,10 @@ import { VideoPlayer } from "@/components/site/video-player";
 import { Link } from "@/i18n/navigation";
 import { participantHref, participantName, sides } from "@/lib/episode-display";
 import { cn } from "@/lib/utils";
-import { episodeSlugs, getEpisode, moreEpisodes } from "@/server/queries/episodes";
-
-export async function generateStaticParams() {
-  const rows = await episodeSlugs();
-  return rows.map((r) => ({ slug: r.slug }));
-}
+import { getEpisode, moreEpisodes } from "@/server/queries/episodes";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/episodes/[slug]">): Promise<Metadata> {
+  await connection();
   const { slug } = await params;
   const ep = await getEpisode(slug);
   if (!ep) return {};
@@ -35,6 +32,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/episodes
 }
 
 export default async function EpisodePage({ params }: PageProps<"/[locale]/episodes/[slug]">) {
+  await connection();
   const { locale, slug } = await params;
   setRequestLocale(locale);
   const ep = await getEpisode(slug);

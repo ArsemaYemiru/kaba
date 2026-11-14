@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -29,26 +31,36 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
-  const [t, settings] = await Promise.all([getTranslations("nav"), getSettings()]);
-
   return (
     <html lang={locale} className={`dark ${fontVariables}`}>
       <body className="flex min-h-dvh flex-col">
-        <NextIntlClientProvider>
-          <a
-            href="#content"
-            className="sr-only z-[200] rounded-full bg-gold px-4 py-2 font-semibold text-bg focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
-          >
-            {t("skipToContent")}
-          </a>
-          <Header />
-          <main id="content" className="flex-1">
-            {children}
-          </main>
-          <HydrationMarker />
-          <Footer social={settings.social} broadcastLine={settings.footer.broadcastLine} footerText={settings.footer.textEn} />
-        </NextIntlClientProvider>
+        <Suspense fallback={null}>
+          <RuntimeSite>{children}</RuntimeSite>
+        </Suspense>
       </body>
     </html>
+  );
+}
+
+// Read CMS content at request time. Image builds need no production database,
+// and the existing tagged query caches still serve subsequent requests.
+async function RuntimeSite({ children }: { children: React.ReactNode }) {
+  await connection();
+  const [t, settings] = await Promise.all([getTranslations("nav"), getSettings()]);
+  return (
+    <NextIntlClientProvider>
+      <a
+        href="#content"
+        className="sr-only z-[200] rounded-full bg-gold px-4 py-2 font-semibold text-bg focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+      >
+        {t("skipToContent")}
+      </a>
+      <Header />
+      <main id="content" className="flex-1">
+        {children}
+      </main>
+      <HydrationMarker />
+      <Footer social={settings.social} broadcastLine={settings.footer.broadcastLine} footerText={settings.footer.textEn} />
+    </NextIntlClientProvider>
   );
 }

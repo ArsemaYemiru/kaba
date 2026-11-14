@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { Chip } from "@/components/brand/chip";
@@ -12,6 +13,7 @@ import { listNews } from "@/server/queries/news";
 export const metadata: Metadata = { title: "News", description: "The latest from Feta.", alternates: { canonical: "/news" } };
 
 export default async function NewsPage({ params }: PageProps<"/[locale]/news">) {
+  await connection();
   const { locale } = await params;
   setRequestLocale(locale);
   const [t, format, posts] = await Promise.all([getTranslations("news"), getFormatter(), listNews()]);
