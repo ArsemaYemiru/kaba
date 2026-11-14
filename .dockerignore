@@ -3,7 +3,7 @@
 **/.next
 **/.env
 **/.env.*
-**/storage
+apps/web/storage
 **/src/generated
 **/test-results
 **/playwright-report
