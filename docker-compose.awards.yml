@@ -1,0 +1,38 @@
+# Feta Awards dev services (separate from Feta Show's docker-compose.yml).
+#   docker compose -f docker-compose.awards.yml up -d --wait
+# Redis is optional (rate limiter): add `--profile redis`.
+name: feta-awards
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U feta -d feta_awards"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    environment:
+      POSTGRES_USER: feta
+      POSTGRES_PASSWORD: feta
+      POSTGRES_DB: feta_awards
+    ports:
+      - "127.0.0.1:${AWARDS_DB_PORT:-5436}:5432"
+    volumes:
+      - awards_pgdata:/var/lib/postgresql/data
+
+  mailpit:
+    image: axllent/mailpit:v1.31.3
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${AWARDS_SMTP_PORT:-1026}:1025"
+      - "127.0.0.1:${AWARDS_MAIL_UI_PORT:-8026}:8025"
+
+  redis:
+    image: redis:7-alpine
+    profiles: ["redis"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${AWARDS_REDIS_PORT:-6380}:6379"
+
+volumes:
+  awards_pgdata:

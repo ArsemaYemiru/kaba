@@ -33,3 +33,14 @@ coverage
 
 # Temporary production proxy config used by container smoke checks
 /nginx.conf
+
+# Feta Awards (apps/awards)
+apps/awards/src/generated
+apps/awards/storage
+apps/awards/test-results
+apps/awards/playwright-report
+apps/awards/blob-report
+
+# k6 fixtures/results (Feta Awards)
+apps/awards/load/.fixtures.json
+apps/awards/load/.summary.json

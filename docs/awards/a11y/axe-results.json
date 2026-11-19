@@ -1,0 +1,26 @@
+{
+  "tool": "axe-core via @axe-core/playwright 4.14.0",
+  "tags": [
+    "wcag2a",
+    "wcag2aa",
+    "wcag21a",
+    "wcag21aa"
+  ],
+  "results": [
+    {
+      "page": "/verify",
+      "viewport": 1280,
+      "violations": [
+        {
+          "id": "label-content-name-mismatch",
+          "impact": "serious",
+          "nodes": 1,
+          "help": "Elements must have their visible text as part of their accessible name",
+          "targets": [
+            "#radix-_r_1_"
+          ]
+        }
+      ]
+    }
+  ]
+}

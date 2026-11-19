@@ -1,0 +1,115 @@
+{
+  "tool": "Lighthouse 13.6.0",
+  "formFactor": "mobile (simulated throttling)",
+  "server": "next start (production build), local Postgres",
+  "runs": [
+    {
+      "run": 1,
+      "page": "home",
+      "url": "/",
+      "performance": 88,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "lcp": "1.2 s",
+      "tbt": "470 ms",
+      "cls": "0"
+    },
+    {
+      "run": 1,
+      "page": "category",
+      "url": "/awards/2026/best-male-artist",
+      "performance": 92,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "lcp": "1.2 s",
+      "tbt": "330 ms",
+      "cls": "0.001"
+    },
+    {
+      "run": 1,
+      "page": "artists",
+      "url": "/artists",
+      "performance": 95,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "lcp": "1.2 s",
+      "tbt": "270 ms",
+      "cls": "0.001"
+    },
+    {
+      "run": 2,
+      "page": "home",
+      "url": "/",
+      "performance": 94,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "lcp": "1.2 s",
+      "tbt": "300 ms",
+      "cls": "0.001"
+    },
+    {
+      "run": 2,
+      "page": "category",
+      "url": "/awards/2026/best-male-artist",
+      "performance": 95,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "lcp": "1.2 s",
+      "tbt": "240 ms",
+      "cls": "0.001"
+    },
+    {
+      "run": 2,
+      "page": "artists",
+      "url": "/artists",
+      "performance": 93,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "lcp": "1.2 s",
+      "tbt": "320 ms",
+      "cls": "0.001"
+    },
+    {
+      "run": 3,
+      "page": "home",
+      "url": "/",
+      "performance": 90,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "lcp": "1.2 s",
+      "tbt": "400 ms",
+      "cls": "0"
+    },
+    {
+      "run": 3,
+      "page": "category",
+      "url": "/awards/2026/best-male-artist",
+      "performance": 94,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "lcp": "1.2 s",
+      "tbt": "280 ms",
+      "cls": "0.001"
+    },
+    {
+      "run": 3,
+      "page": "artists",
+      "url": "/artists",
+      "performance": 93,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "lcp": "1.2 s",
+      "tbt": "300 ms",
+      "cls": "0.001"
+    }
+  ]
+}
