@@ -1,0 +1,623 @@
+// Feta Awards (spec §8). Better Auth core + admin, two-factor and phone-number
+// plugin fields. Extra DB guards (CHECKs, partial tally index, append-only
+// VoteEvent trigger) live in the init migration SQL.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPER_ADMIN
+  EDITOR
+  MEMBER
+}
+
+enum Status {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ArtistCategory {
+  SINGER
+  MUSICIAN
+  ACTOR
+  COMEDIAN
+  DANCER
+  PRODUCER_DJ
+  HOST_MEDIA
+  OTHER
+}
+
+enum EditionPhase {
+  DRAFT
+  NOMINEES_ANNOUNCED
+  VOTING_OPEN
+  VOTING_CLOSED
+  WINNERS_ANNOUNCED
+}
+
+enum VotingType {
+  PUBLIC_VOTE
+  JURY
+  HYBRID
+  HONORARY
+}
+
+enum NomineeType {
+  PERSON
+  GROUP
+  SONG
+  ALBUM
+  MUSIC_VIDEO
+  FILM
+  SERIES
+  CREATOR
+  OTHER
+}
+
+enum VideoType {
+  AWARDS_NIGHT
+  RED_CARPET
+  PERFORMANCE
+  ACCEPTANCE_SPEECH
+  INTERVIEW
+  BEHIND_THE_SCENES
+}
+
+enum VideoSource {
+  NONE
+  YOUTUBE
+  UPLOAD
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum VoteEventType {
+  CAST
+  CHANGED
+  VOIDED
+  RESTORED
+}
+
+// ───────────────────────── Better Auth ─────────────────────────
+
+model User {
+  id                  String    @id @default(cuid())
+  name                String
+  displayName         String?
+  email               String    @unique
+  emailNormalized     String?   @unique // set by the create hook (A-9)
+  emailVerified       Boolean   @default(false)
+  image               String?
+  role                Role      @default(MEMBER)
+  phoneNumber         String?   @unique
+  phoneNumberVerified Boolean?  @default(false)
+  twoFactorEnabled    Boolean?  @default(false)
+  banned              Boolean?  @default(false)
+  banReason           String?
+  banExpires          DateTime?
+  newsOptIn           Boolean   @default(false)
+  consentAt           DateTime?
+  isActive            Boolean   @default(true)
+  lastLoginAt         DateTime?
+  mustChangePassword  Boolean   @default(false)
+  isSample            Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  sessions        Session[]
+  accounts        Account[]
+  twoFactors      TwoFactor[]
+  votes           Vote[]           @relation("VoteUser")
+  voidedVotes     Vote[]           @relation("VoteVoidedBy")
+  voteEvents      VoteEvent[]      @relation("VoteEventUser")
+  actedVoteEvents VoteEvent[]      @relation("VoteEventActor")
+  media           Media[]          @relation("MediaUploader")
+  newsPosts       NewsPost[]
+  snapshots       ResultSnapshot[]
+  overrides       WinnerOverride[]
+  activity        ActivityLog[]
+
+  @@index([createdAt])
+  @@index([role])
+  @@map("user")
+}
+
+model Session {
+  id             String   @id @default(cuid())
+  token          String   @unique
+  expiresAt      DateTime
+  ipAddress      String?
+  userAgent      String?
+  impersonatedBy String?
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  password              String?
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model TwoFactor {
+  id                      String    @id @default(cuid())
+  secret                  String
+  backupCodes             String
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified                Boolean?  @default(false)
+  failedVerificationCount Int?      @default(0)
+  lockedUntil             DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("twoFactor")
+}
+
+/// App rate limiter (Postgres driver). Redis replaces it when REDIS_URL is set.
+model RateLimit {
+  key    String    @id
+  points Int
+  expire DateTime?
+}
+
+// ───────────────────────── Media & artists ─────────────────────────
+
+model Media {
+  id           String    @id @default(cuid())
+  type         MediaType
+  storageKey   String    @unique
+  url          String
+  variants     Json?
+  mimeType     String
+  sizeBytes    Int
+  width        Int?
+  height       Int?
+  durationSec  Float?
+  blurDataUrl  String?
+  alt          String    @default("")
+  caption      String?
+  credit       String?
+  tags         String[]
+  isSample     Boolean   @default(false)
+  uploadedById String?
+  uploadedBy   User?     @relation("MediaUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  artistPortraits Artist[]       @relation("ArtistPortrait")
+  artistCovers    Artist[]       @relation("ArtistCover")
+  artistGallery   ArtistMedia[]
+  editionHeroes   AwardEdition[]
+  nomineeImages   Nominee[]
+  videoFiles      Video[]        @relation("VideoFile")
+  videoPosters    Video[]        @relation("VideoPoster")
+  albumCovers     Album[]
+  albumItems      AlbumItem[]
+  newsCovers      NewsPost[]
+
+  @@index([type, createdAt])
+}
+
+model Artist {
+  id             String           @id @default(cuid())
+  slug           String           @unique
+  nameEn         String
+  nameAm         String?
+  stageName      String?
+  legalNameEn    String?
+  legalNameAm    String?
+  isGroup        Boolean          @default(false)
+  categories     ArtistCategory[]
+  shortBioEn     String?
+  shortBioAm     String?
+  bioEn          String?
+  bioAm          String?
+  birthYear      Int?
+  deathYear      Int?
+  yearsActive    String?
+  genres         String[]
+  notableWorks   Json             @default("[]")
+  socialLinks    Json             @default("[]")
+  portraitId     String?
+  portrait       Media?           @relation("ArtistPortrait", fields: [portraitId], references: [id], onDelete: SetNull)
+  coverId        String?
+  cover          Media?           @relation("ArtistCover", fields: [coverId], references: [id], onDelete: SetNull)
+  isLegend       Boolean          @default(false)
+  featured       Boolean          @default(false)
+  status         Status           @default(DRAFT)
+  sortOrder      Int              @default(0)
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  gallery  ArtistMedia[]
+  nominees NomineeArtist[]
+  videos   VideoArtist[]
+
+  @@index([status, featured])
+  @@index([isLegend])
+}
+
+model ArtistMedia {
+  artistId  String
+  mediaId   String
+  sortOrder Int    @default(0)
+  artist    Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  media     Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([artistId, mediaId])
+}
+
+// ───────────────────────── Awards ─────────────────────────
+
+model AwardEdition {
+  id                    String       @id @default(cuid())
+  year                  Int          @unique
+  slug                  String       @unique
+  nameEn                String
+  nameAm                String?
+  phase                 EditionPhase @default(DRAFT)
+  nomineesAnnouncedAt   DateTime?
+  votingOpensAt         DateTime?
+  votingClosesAt        DateTime?
+  ceremonyAt            DateTime?
+  venue                 String?
+  broadcastPartner      String?
+  heroMediaId           String?
+  heroMedia             Media?       @relation(fields: [heroMediaId], references: [id], onDelete: SetNull)
+  showPublicPercentages Boolean      @default(false)
+  status                Status       @default(DRAFT)
+  isSample              Boolean      @default(false)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  categories AwardCategory[]
+  votes      Vote[]
+  voteEvents VoteEvent[]
+  snapshots  ResultSnapshot[]
+  videos     Video[]
+  albums     Album[]
+  news       NewsPost[]
+
+  @@index([phase])
+  @@index([status])
+}
+
+model AwardCategory {
+  id            String       @id @default(cuid())
+  editionId     String
+  edition       AwardEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
+  slug          String
+  nameEn        String
+  nameAm        String?
+  descriptionEn String?
+  descriptionAm String?
+  icon          String       @default("trophy")
+  votingType    VotingType
+  publicWeight  Int          @default(50)
+  juryWeight    Int          @default(50)
+  nomineeType   NomineeType
+  sortOrder     Int          @default(0)
+  status        Status       @default(DRAFT)
+  isSample      Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  nominees   Nominee[]
+  votes      Vote[]
+  voteEvents VoteEvent[]
+  overrides  WinnerOverride[]
+
+  @@unique([editionId, slug])
+  @@index([editionId, status, sortOrder])
+}
+
+model Nominee {
+  id            String        @id @default(cuid())
+  categoryId    String
+  category      AwardCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  slug          String        @unique
+  displayNameEn String
+  displayNameAm String?
+  workTitleEn   String?
+  workTitleAm   String?
+  imageId       String?
+  image         Media?        @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  blurbEn       String?
+  blurbAm       String?
+  youtubeUrl    String?
+  juryScore     Int?
+  isWinner      Boolean       @default(false)
+  sortOrder     Int           @default(0)
+  status        Status        @default(DRAFT)
+  isSample      Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  artists   NomineeArtist[]
+  videos    VideoNominee[]
+  votes     Vote[]
+  overrides WinnerOverride[]
+
+  @@index([categoryId, status, sortOrder])
+}
+
+model NomineeArtist {
+  nomineeId String
+  artistId  String
+  nominee   Nominee @relation(fields: [nomineeId], references: [id], onDelete: Cascade)
+  artist    Artist  @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@id([nomineeId, artistId])
+  @@index([artistId])
+}
+
+/// One vote per member per category (unique userId + categoryId). Tallies use
+/// the partial index on (categoryId, nomineeId) WHERE voidedAt IS NULL.
+model Vote {
+  id         String        @id @default(cuid())
+  userId     String? // null only after account deletion once results are locked (A-15)
+  user       User?         @relation("VoteUser", fields: [userId], references: [id], onDelete: SetNull)
+  editionId  String
+  edition    AwardEdition  @relation(fields: [editionId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   AwardCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  nomineeId  String
+  nominee    Nominee       @relation(fields: [nomineeId], references: [id], onDelete: Cascade)
+  ipHash     String
+  uaHash     String
+  voidedAt   DateTime?
+  voidReason String?
+  voidedById String?
+  voidedBy   User?         @relation("VoteVoidedBy", fields: [voidedById], references: [id], onDelete: SetNull)
+  isSample   Boolean       @default(false)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@unique([userId, categoryId])
+  @@index([createdAt])
+  @@index([editionId, createdAt])
+  @@index([ipHash])
+}
+
+/// Append-only audit trail (DB trigger blocks updates/deletes, A-12).
+model VoteEvent {
+  id            String        @id @default(cuid())
+  userId        String?
+  user          User?         @relation("VoteEventUser", fields: [userId], references: [id], onDelete: SetNull)
+  editionId     String
+  edition       AwardEdition  @relation(fields: [editionId], references: [id], onDelete: Cascade)
+  categoryId    String
+  category      AwardCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  fromNomineeId String?
+  toNomineeId   String?
+  type          VoteEventType
+  ipHash        String
+  uaHash        String
+  actorId       String?
+  actor         User?         @relation("VoteEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+  reason        String?
+  isSample      Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+
+  @@index([ipHash, createdAt])
+  @@index([userId, createdAt])
+  @@index([editionId, createdAt])
+}
+
+model ResultSnapshot {
+  id          String       @id @default(cuid())
+  editionId   String
+  edition     AwardEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
+  lockedAt    DateTime     @default(now())
+  lockedById  String?
+  lockedBy    User?        @relation(fields: [lockedById], references: [id], onDelete: SetNull)
+  payload     Json
+  sha256      String
+  publishedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([editionId, lockedAt])
+}
+
+model WinnerOverride {
+  id         String        @id @default(cuid())
+  categoryId String
+  category   AwardCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  nomineeId  String
+  nominee    Nominee       @relation(fields: [nomineeId], references: [id], onDelete: Cascade)
+  reason     String
+  byId       String?
+  by         User?         @relation(fields: [byId], references: [id], onDelete: SetNull)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([categoryId, createdAt])
+}
+
+// ───────────────────────── Content ─────────────────────────
+
+model Video {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  titleEn     String
+  titleAm     String?
+  type        VideoType
+  source      VideoSource   @default(NONE)
+  youtubeUrl  String?
+  mediaId     String?
+  media       Media?        @relation("VideoFile", fields: [mediaId], references: [id], onDelete: SetNull)
+  captionsUrl String?
+  posterId    String?
+  poster      Media?        @relation("VideoPoster", fields: [posterId], references: [id], onDelete: SetNull)
+  editionId   String?
+  edition     AwardEdition? @relation(fields: [editionId], references: [id], onDelete: SetNull)
+  featured    Boolean       @default(false)
+  status      Status        @default(DRAFT)
+  publishedAt DateTime?
+  isSample    Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  nominees VideoNominee[]
+  artists  VideoArtist[]
+
+  @@index([status, type])
+  @@index([featured])
+}
+
+model VideoNominee {
+  videoId   String
+  nomineeId String
+  video     Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  nominee   Nominee @relation(fields: [nomineeId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, nomineeId])
+}
+
+model VideoArtist {
+  videoId  String
+  artistId String
+  video    Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, artistId])
+  @@index([artistId])
+}
+
+model Album {
+  id            String        @id @default(cuid())
+  slug          String        @unique
+  titleEn       String
+  titleAm       String?
+  descriptionEn String?
+  descriptionAm String?
+  coverId       String?
+  cover         Media?        @relation(fields: [coverId], references: [id], onDelete: SetNull)
+  editionId     String?
+  edition       AwardEdition? @relation(fields: [editionId], references: [id], onDelete: SetNull)
+  status        Status        @default(DRAFT)
+  isSample      Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  items         AlbumItem[]
+
+  @@index([status])
+}
+
+model AlbumItem {
+  id        String  @id @default(cuid())
+  albumId   String
+  album     Album   @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media   @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  sortOrder Int     @default(0)
+  caption   String?
+
+  @@index([albumId, sortOrder])
+}
+
+model NewsPost {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  titleEn     String
+  titleAm     String?
+  excerptEn   String?
+  excerptAm   String?
+  bodyEn      String
+  bodyAm      String?
+  coverId     String?
+  cover       Media?        @relation(fields: [coverId], references: [id], onDelete: SetNull)
+  tags        String[]
+  editionId   String?
+  edition     AwardEdition? @relation(fields: [editionId], references: [id], onDelete: SetNull)
+  featured    Boolean       @default(false)
+  status      Status        @default(DRAFT)
+  publishedAt DateTime?
+  authorId    String?
+  author      User?         @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  isSample    Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([featured])
+}
+
+/// Single row (id = 1); each JSON column is validated by its Zod schema.
+model SiteSettings {
+  id               Int      @id @default(1)
+  branding         Json
+  hero             Json
+  ticker           Json
+  currentEditionId String?
+  featured         Json
+  social           Json
+  contact          Json
+  sponsors         Json
+  seo              Json
+  footer           Json
+  pages            Json
+  voting           Json
+  updatedAt        DateTime @updatedAt
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String
+  entityId   String?
+  meta       Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@index([userId])
+}

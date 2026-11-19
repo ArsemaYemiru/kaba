@@ -19,6 +19,14 @@
     "db:migrate": "pnpm --filter web db:migrate",
     "db:seed": "pnpm --filter web db:seed",
     "db:reset": "pnpm --filter web db:reset",
-    "db:studio": "pnpm --filter web db:studio"
+    "db:studio": "pnpm --filter web db:studio",
+    "awards:dev": "pnpm --filter awards dev",
+    "awards:build": "pnpm --filter awards build",
+    "awards:start": "pnpm --filter awards start",
+    "awards:lint": "pnpm --filter awards lint",
+    "awards:typecheck": "pnpm --filter awards typecheck",
+    "awards:test": "pnpm --filter awards test",
+    "awards:test:e2e": "pnpm --filter awards test:e2e",
+    "awards:screens": "pnpm --filter awards screens"
   }
 }

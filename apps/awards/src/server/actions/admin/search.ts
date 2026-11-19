@@ -1,0 +1,37 @@
+"use server";
+
+import { z } from "zod";
+import { authorize } from "@/lib/authz";
+import { prisma } from "@/lib/db";
+
+export type AdminSearchHit = { kind: "Nominee" | "Category" | "Edition" | "Member" | "Artist" | "Video" | "Album" | "News"; title: string; href: string; status: string };
+
+/** Admin global search (top bar): titles/names across content, including drafts. */
+export async function adminSearch(input: unknown): Promise<AdminSearchHit[]> {
+  const a = await authorize();
+  if (!a.ok) return [];
+  const q = z.string().trim().min(2).max(80).safeParse(input);
+  if (!q.success) return [];
+  const c = { contains: q.data, mode: "insensitive" as const };
+  const take = 6;
+  const [artists, nominees, categories, editions, members, videos, albums, news] = await Promise.all([
+    prisma.artist.findMany({ where: { OR: [{ nameEn: c }, { nameAm: c }, { stageName: c }] }, select: { id: true, nameEn: true, status: true }, take }),
+    prisma.nominee.findMany({ where: { OR: [{ displayNameEn: c }, { displayNameAm: c }, { workTitleEn: c }] }, select: { id: true, displayNameEn: true, workTitleEn: true, status: true, category: { select: { nameEn: true } } }, take }),
+    prisma.awardCategory.findMany({ where: { OR: [{ nameEn: c }, { nameAm: c }] }, select: { id: true, nameEn: true, status: true, edition: { select: { year: true } } }, take }),
+    prisma.awardEdition.findMany({ where: { OR: [{ nameEn: c }, { slug: c }] }, select: { id: true, nameEn: true, status: true }, take }),
+    prisma.user.findMany({ where: { role: "MEMBER", OR: [{ email: c }, { displayName: c }, { name: c }] }, select: { id: true, email: true, banned: true }, take }),
+    prisma.video.findMany({ where: { OR: [{ titleEn: c }, { titleAm: c }] }, select: { id: true, titleEn: true, status: true }, take }),
+    prisma.album.findMany({ where: { OR: [{ titleEn: c }, { titleAm: c }] }, select: { id: true, titleEn: true, status: true }, take }),
+    prisma.newsPost.findMany({ where: { OR: [{ titleEn: c }, { titleAm: c }] }, select: { id: true, titleEn: true, status: true }, take }),
+  ]);
+  return [
+    ...artists.map((r) => ({ kind: "Artist" as const, title: r.nameEn, href: `/admin/artists/${r.id}`, status: r.status })),
+    ...nominees.map((r) => ({ kind: "Nominee" as const, title: `${r.workTitleEn ?? r.displayNameEn} · ${r.category.nameEn}`, href: `/admin/nominees/${r.id}`, status: r.status })),
+    ...categories.map((r) => ({ kind: "Category" as const, title: `${r.nameEn} · ${r.edition.year}`, href: `/admin/categories/${r.id}`, status: r.status })),
+    ...editions.map((r) => ({ kind: "Edition" as const, title: r.nameEn, href: `/admin/editions/${r.id}`, status: r.status })),
+    ...members.map((r) => ({ kind: "Member" as const, title: r.email, href: `/admin/members/${r.id}`, status: r.banned ? "BANNED" : "MEMBER" })),
+    ...videos.map((r) => ({ kind: "Video" as const, title: r.titleEn, href: `/admin/videos/${r.id}`, status: r.status })),
+    ...albums.map((r) => ({ kind: "Album" as const, title: r.titleEn, href: `/admin/gallery/${r.id}`, status: r.status })),
+    ...news.map((r) => ({ kind: "News" as const, title: r.titleEn, href: `/admin/news/${r.id}`, status: r.status })),
+  ];
+}

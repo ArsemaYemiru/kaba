@@ -1,0 +1,35 @@
+{
+  "_note": "All Amharic UI and site copy lives here for one native-speaker review. Every string below needs review before launch.",
+  "brand": {
+    "wordmark": "ፈታ",
+    "tagline": "የኢትዮጵያን ብሩህ ኮከቦች እናክብር።"
+  },
+  "nav": {
+    "home": "ዋና ገጽ",
+    "awards": "ሽልማቶች",
+    "vote": "ድምጽ ይስጡ",
+    "nominees": "እጩዎች",
+    "winners": "አሸናፊዎች",
+    "artists": "አርቲስቶች",
+    "videos": "ቪዲዮዎች",
+    "gallery": "ፎቶዎች",
+    "news": "ዜና",
+    "about": "ስለ እኛ",
+    "signIn": "ይግቡ",
+    "signUp": "ይመዝገቡ"
+  },
+  "sampleCategories": {
+    "1": "ምርጥ ወንድ አርቲስት",
+    "2": "ምርጥ ሴት አርቲስት",
+    "3": "የዓመቱ ምርጥ ዘፈን",
+    "4": "የዓመቱ ምርጥ አልበም",
+    "5": "የዓመቱ ምርጥ የሙዚቃ ቪዲዮ",
+    "6": "ምርጥ አዲስ አርቲስት",
+    "7": "ምርጥ ተዋናይ",
+    "8": "ምርጥ ተዋናይት",
+    "9": "የዓመቱ ምርጥ ፊልም",
+    "10": "የዓመቱ ምርጥ ኮሜዲያን",
+    "11": "የዓመቱ ምርጥ የይዘት ፈጣሪ",
+    "12": "የሕይወት ዘመን ተሸላሚ"
+  }
+}
