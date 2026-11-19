@@ -13,7 +13,7 @@ import { StatusBadge } from "../status-badge";
 type Status = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 const VTYPE: Record<string, string> = { PUBLIC_VOTE: "Public vote", HYBRID: "Public + Jury", JURY: "Jury", HONORARY: "Honorary" };
 const view = (href: string, label: string) => (
-  <a href={href} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-xs text-gold hover:underline" aria-label={`Preview ${label}`}>
+  <a href={href} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-xs text-gold hover:underline" aria-label={`View ${label}`}>
     View <ExternalLink className="size-3" />
   </a>
 );

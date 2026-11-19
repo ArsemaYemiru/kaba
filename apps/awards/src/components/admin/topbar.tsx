@@ -44,7 +44,7 @@ export function Topbar({ name, email, role, unread }: Props) {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label={`Account menu for ${name} (${initialsFor(name)})`}
+              aria-label={`Account menu for ${name}, ${initialsFor(name)}`}
               className="flex size-9 items-center justify-center rounded-full border border-line bg-surface-2 font-display text-xs font-bold text-gold hover:border-gold/60"
             >
               {initialsFor(name)}

@@ -8,19 +8,289 @@
   ],
   "results": [
     {
+      "page": "/",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/awards/2026",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/awards/2026/best-male-artist",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/awards/archive",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/vote",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/artists",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/artists/mulatu-astatke",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/videos",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/gallery",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/gallery/red-carpet",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/news",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/news/welcome-to-the-official-feta-awards-website",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/about",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/rules",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/privacy",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/terms",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/sign-in",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/sign-up",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/forgot-password",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/no-such-page",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/nominees/sample-nominee-1a",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/awards/2026",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/awards/2026/best-male-artist",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/awards/archive",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/vote",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/artists",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/artists/mulatu-astatke",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/videos",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/gallery",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/gallery/red-carpet",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/news",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/news/welcome-to-the-official-feta-awards-website",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/about",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/rules",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/privacy",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/terms",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/sign-in",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/sign-up",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/forgot-password",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/no-such-page",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/nominees/sample-nominee-1a",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
       "page": "/verify",
       "viewport": 1280,
-      "violations": [
-        {
-          "id": "label-content-name-mismatch",
-          "impact": "serious",
-          "nodes": 1,
-          "help": "Elements must have their visible text as part of their accessible name",
-          "targets": [
-            "#radix-_r_1_"
-          ]
-        }
-      ]
+      "violations": []
+    },
+    {
+      "page": "/vote (signed-in member)",
+      "viewport": 1280,
+      "violations": []
+    },
+    {
+      "page": "/account (signed-in member)",
+      "viewport": 1280,
+      "violations": []
+    },
+    {
+      "page": "/account/ballot (signed-in member)",
+      "viewport": 1280,
+      "violations": []
+    },
+    {
+      "page": "/awards/2026/best-male-artist (signed-in member)",
+      "viewport": 1280,
+      "violations": []
+    },
+    {
+      "page": "/admin",
+      "viewport": 1280,
+      "violations": []
+    },
+    {
+      "page": "/admin/editions",
+      "viewport": 1280,
+      "violations": []
+    },
+    {
+      "page": "/admin/nominees",
+      "viewport": 1280,
+      "violations": []
+    },
+    {
+      "page": "/admin/nominees/new",
+      "viewport": 1280,
+      "violations": []
+    },
+    {
+      "page": "/admin/results",
+      "viewport": 1280,
+      "violations": []
+    },
+    {
+      "page": "/admin/members",
+      "viewport": 1280,
+      "violations": []
+    },
+    {
+      "page": "/admin/monitor",
+      "viewport": 1280,
+      "violations": []
+    },
+    {
+      "page": "/admin/media",
+      "viewport": 1280,
+      "violations": []
+    },
+    {
+      "page": "/admin/settings",
+      "viewport": 1280,
+      "violations": []
+    },
+    {
+      "page": "/admin/security",
+      "viewport": 1280,
+      "violations": []
     }
   ]
 }

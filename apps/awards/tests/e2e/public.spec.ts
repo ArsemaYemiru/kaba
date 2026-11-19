@@ -122,3 +122,35 @@ for (const width of [360, 390, 1440]) {
     }
   });
 }
+
+test("SEO and security: metadata in <head>, share images, JSON-LD, headers (Gate 7)", async ({ request }) => {
+  const nominee = await firstHref(request, "/nominees/");
+  const res = await request.get(nominee);
+  const html = await res.text();
+  const head = html.slice(0, html.indexOf("</head>"));
+  expect(head).toMatch(/<meta name="description" content="[^"]+"/);
+  expect(head).toMatch(/<link rel="canonical" href="[^"]+\/nominees\//);
+  const og = head.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
+  expect(og).toContain("/og/nominee/");
+  expect(head).toContain('<meta name="twitter:card" content="summary_large_image"');
+  const img = await request.get(new URL(og!).pathname);
+  expect(img.status()).toBe(200);
+  expect(img.headers()["content-type"]).toBe("image/png");
+  for (const u of ["/og/site", "/og/artist/mulatu-astatke", `/og/category/${year()}/best-male-artist`, `/og/edition/${year()}`]) expect((await request.get(u)).status(), u).toBe(200);
+  expect((await request.get("/og/nominee/no-such-nominee")).status()).toBe(404);
+
+  const home = await (await request.get("/")).text();
+  const ld = [...home.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/g)].map((m) => JSON.parse(m[1]!));
+  expect(ld.map((x) => x["@type"])).toContain("Organization");
+  const artist = await (await request.get("/artists/mulatu-astatke")).text();
+  expect(artist).toContain('"@type":"Person"');
+
+  const h = res.headers();
+  expect(h["content-security-policy"]).toContain("object-src 'none'");
+  expect(h["x-content-type-options"]).toBe("nosniff");
+  expect(h["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  expect(h["x-powered-by"]).toBeUndefined();
+  const auth = await request.get("/sign-in");
+  expect(auth.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
+  expect(auth.headers()["content-security-policy"]).toContain("object-src 'none'");
+});
