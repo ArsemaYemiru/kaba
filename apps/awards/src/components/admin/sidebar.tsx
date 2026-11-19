@@ -20,7 +20,7 @@ export function NavList({ isSuperAdmin, unread, collapsed, onNavigate }: { isSup
         const badge = item.badge === "monitor" && unread > 0 ? unread : null;
         return (
           <li key={item.href} className={cn(item.section && "mt-3 first:mt-0")}>
-            {item.section && !collapsed ? <p className="px-3 pb-1 text-[0.625rem] font-bold tracking-[0.2em] text-muted-foreground/70 uppercase">{item.section}</p> : null}
+            {item.section && !collapsed ? <p className="px-3 pb-1 text-[0.625rem] font-bold tracking-[0.2em] text-muted-foreground uppercase">{item.section}</p> : null}
             <Link
               href={item.href}
               onClick={onNavigate}
@@ -86,8 +86,9 @@ export function Sidebar({ isSuperAdmin, unread }: { isSuperAdmin: boolean; unrea
       )}
     >
       <div className={cn("flex h-14 items-center", collapsed ? "justify-center" : "px-4")}>
-        <Link href="/admin" aria-label="Admin dashboard" className="flex flex-col items-center gap-0.5">
+        <Link href="/admin" className="flex flex-col items-center gap-0.5">
           <Wordmark size="sm" subtitle={!collapsed} />
+          <span className="sr-only">admin dashboard</span>
         </Link>
       </div>
       <TibebStrip height={4} />

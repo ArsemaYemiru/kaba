@@ -24,7 +24,7 @@ export function AccountMenu({ viewer }: { viewer: MenuViewer }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={`${t("accountMenu")} (${initials(viewer.name)})`} className="relative hidden rounded-full sm:inline-flex">
+        <Button variant="ghost" size="icon" aria-label={`${t("accountMenu")}, ${initials(viewer.name)}`} className="relative hidden rounded-full sm:inline-flex">
           <span className="flex size-9 items-center justify-center rounded-full bg-gold font-display text-sm font-extrabold text-bg">{initials(viewer.name)}</span>
           {!viewer.emailVerified ? <span aria-hidden="true" className="absolute top-0.5 right-0.5 size-2.5 rounded-full border-2 border-bg bg-red" /> : null}
         </Button>

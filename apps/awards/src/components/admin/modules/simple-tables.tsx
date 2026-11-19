@@ -15,7 +15,7 @@ type Status = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 type Thumb = { url: string; alt: string } | null;
 const date = (d: Date | null) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 const view = (href: string, label: string) => (
-  <a href={href} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-xs text-gold hover:underline" aria-label={`Preview ${label}`}>
+  <a href={href} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-xs text-gold hover:underline" aria-label={`View ${label}`}>
     View <ExternalLink className="size-3" />
   </a>
 );

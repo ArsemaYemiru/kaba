@@ -55,7 +55,7 @@ const columns: ColumnDef<ArtistRow, unknown>[] = [
     header: "",
     cell: ({ row: { original: a } }) =>
       a.status === "PUBLISHED" ? (
-        <a href={`/artists/${a.slug}`} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-xs text-gold hover:underline" aria-label={`Preview ${a.nameEn}`}>
+        <a href={`/artists/${a.slug}`} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-xs text-gold hover:underline" aria-label={`View ${a.nameEn}`}>
           View <ExternalLink className="size-3" />
         </a>
       ) : null,

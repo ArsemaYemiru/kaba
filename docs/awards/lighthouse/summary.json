@@ -111,5 +111,116 @@
       "tbt": "300 ms",
       "cls": "0.001"
     }
+  ],
+  "note": "'runs' were measured on mains power (benchmarkIndex ~1430). 'batteryRuns' are a re-run after the prefetch change (A-71) on battery with the CPU power-capped (benchmarkIndex ~800, ~1.7 of 4.2 GHz): same LCP/CLS, TBT roughly doubles. Re-run on mains power before sign-off.",
+  "batteryRuns": [
+    {
+      "run": 1,
+      "page": "home",
+      "url": "/",
+      "performance": 81,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "tbt": "820 ms",
+      "lcp": "1.2 s",
+      "benchmarkIndex": 792.5
+    },
+    {
+      "run": 1,
+      "page": "category",
+      "url": "/awards/2026/best-male-artist",
+      "performance": 87,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "tbt": "520 ms",
+      "lcp": "1.2 s",
+      "benchmarkIndex": 773
+    },
+    {
+      "run": 1,
+      "page": "artists",
+      "url": "/artists",
+      "performance": 82,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "tbt": "750 ms",
+      "lcp": "1.2 s",
+      "benchmarkIndex": 763.5
+    },
+    {
+      "run": 2,
+      "page": "home",
+      "url": "/",
+      "performance": 77,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "tbt": "1,070 ms",
+      "lcp": "1.4 s",
+      "benchmarkIndex": 853.5
+    },
+    {
+      "run": 2,
+      "page": "category",
+      "url": "/awards/2026/best-male-artist",
+      "performance": 84,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "tbt": "620 ms",
+      "lcp": "1.2 s",
+      "benchmarkIndex": 862.5
+    },
+    {
+      "run": 2,
+      "page": "artists",
+      "url": "/artists",
+      "performance": 79,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "tbt": "920 ms",
+      "lcp": "1.2 s",
+      "benchmarkIndex": 850
+    },
+    {
+      "run": 3,
+      "page": "home",
+      "url": "/",
+      "performance": 78,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "tbt": "1,000 ms",
+      "lcp": "1.2 s",
+      "benchmarkIndex": 832
+    },
+    {
+      "run": 3,
+      "page": "category",
+      "url": "/awards/2026/best-male-artist",
+      "performance": 83,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "tbt": "680 ms",
+      "lcp": "1.2 s",
+      "benchmarkIndex": 815
+    },
+    {
+      "run": 3,
+      "page": "artists",
+      "url": "/artists",
+      "performance": 84,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100,
+      "tbt": "630 ms",
+      "lcp": "1.2 s",
+      "benchmarkIndex": 752
+    }
   ]
 }
