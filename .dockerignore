@@ -3,7 +3,7 @@
 **/.next
 **/.env
 **/.env.*
-apps/web/storage
+apps/awards/storage
 **/src/generated
 **/test-results
 **/playwright-report
@@ -11,3 +11,4 @@ apps/web/storage
 **/*.log
 **/*.tsbuildinfo
 docs
+apps/awards/tests

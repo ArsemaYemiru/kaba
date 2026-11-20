@@ -1,5 +1,5 @@
 import type { ArtistCardProps } from "@/components/brand/artist-card";
-import { isNominee, isWinner, type ArtistCardData } from "@/server/queries/artists";
+import { isHonored, type ArtistCardData } from "@/server/queries/artists";
 
 type T = (key: string) => string;
 
@@ -14,11 +14,9 @@ export function toArtistCardProps(a: ArtistCardData, t: T): ArtistCardProps & { 
     imageAlt: a.portrait?.alt,
     blurDataUrl: a.portrait?.blurDataUrl,
     isLegend: a.isLegend,
-    nominee: isNominee(a),
-    winner: isWinner(a),
+    honored: isHonored(a),
     legendLabel: t("legend"),
-    nomineeLabel: t("nominee"),
-    winnerLabel: t("winner"),
+    honoredLabel: t("honoree"),
     href: `/artists/${a.slug}`,
   };
 }

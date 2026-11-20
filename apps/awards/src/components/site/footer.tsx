@@ -62,11 +62,6 @@ export async function Footer({
                 </Link>
               </li>
             ))}
-            <li>
-              <Link href="/vote" className="inline-block py-1 font-semibold text-gold hover:underline">
-                {t("vote")}
-              </Link>
-            </li>
           </ul>
         </nav>
         <SocialBlock title={tf("followUs")} social={social} />
@@ -75,7 +70,7 @@ export async function Footer({
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-2 px-4 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:px-6">
           <p>{tf("rights", { year })}</p>
           <nav aria-label="Legal" className="flex flex-wrap gap-x-5">
-            {(["rules", "privacy", "terms"] as const).map((k) => (
+            {(["privacy", "terms"] as const).map((k) => (
               <Link key={k} href={`/${k}`} className="py-1 hover:text-foreground">
                 {t(k)}
               </Link>

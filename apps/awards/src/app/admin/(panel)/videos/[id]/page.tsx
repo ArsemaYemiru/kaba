@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { VideoForm } from "@/components/admin/modules/content-forms";
 import { requireUser } from "@/lib/authz";
 import { videoToForm } from "@/server/admin/form-values";
-import { artistOptions, editionOptions, getVideoForEdit, mediaByIds, nomineeOptions } from "@/server/admin/loaders";
+import { artistOptions, editionOptions, getVideoForEdit, mediaByIds, honoreeOptions } from "@/server/admin/loaders";
 import { Suspense } from "react";
 import Loading from "@/app/admin/(panel)/loading";
 
@@ -23,6 +23,6 @@ async function EditVideoPageContent({ params }: PageProps<"/admin/videos/[id]">)
   const { id } = await params;
   const v = await getVideoForEdit(id);
   if (!v) notFound();
-  const [editions, artists, nominees, media] = await Promise.all([editionOptions(), artistOptions(), nomineeOptions(), mediaByIds([v.mediaId, v.posterId])]);
+  const [editions, artists, nominees, media] = await Promise.all([editionOptions(), artistOptions(), honoreeOptions(), mediaByIds([v.mediaId, v.posterId])]);
   return <VideoForm key={v.updatedAt.toISOString()} id={v.id} initial={videoToForm(v)} media={media} editions={editions} artists={artists} nominees={nominees} />;
 }

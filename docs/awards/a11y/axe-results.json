@@ -18,17 +18,17 @@
       "violations": []
     },
     {
-      "page": "/awards/2026/best-male-artist",
+      "page": "/awards/2026/classical",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/honorees/sample-artist-1a-sample",
       "viewport": 390,
       "violations": []
     },
     {
       "page": "/awards/archive",
-      "viewport": 390,
-      "violations": []
-    },
-    {
-      "page": "/vote",
       "viewport": 390,
       "violations": []
     },
@@ -39,6 +39,11 @@
     },
     {
       "page": "/artists/mulatu-astatke",
+      "viewport": 390,
+      "violations": []
+    },
+    {
+      "page": "/artists/sample-artist-1a",
       "viewport": 390,
       "violations": []
     },
@@ -73,11 +78,6 @@
       "violations": []
     },
     {
-      "page": "/rules",
-      "viewport": 390,
-      "violations": []
-    },
-    {
       "page": "/privacy",
       "viewport": 390,
       "violations": []
@@ -93,22 +93,12 @@
       "violations": []
     },
     {
-      "page": "/sign-up",
-      "viewport": 390,
-      "violations": []
-    },
-    {
       "page": "/forgot-password",
       "viewport": 390,
       "violations": []
     },
     {
       "page": "/no-such-page",
-      "viewport": 390,
-      "violations": []
-    },
-    {
-      "page": "/nominees/sample-nominee-1a",
       "viewport": 390,
       "violations": []
     },
@@ -123,17 +113,17 @@
       "violations": []
     },
     {
-      "page": "/awards/2026/best-male-artist",
+      "page": "/awards/2026/classical",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/honorees/sample-artist-1a-sample",
       "viewport": 1440,
       "violations": []
     },
     {
       "page": "/awards/archive",
-      "viewport": 1440,
-      "violations": []
-    },
-    {
-      "page": "/vote",
       "viewport": 1440,
       "violations": []
     },
@@ -144,6 +134,11 @@
     },
     {
       "page": "/artists/mulatu-astatke",
+      "viewport": 1440,
+      "violations": []
+    },
+    {
+      "page": "/artists/sample-artist-1a",
       "viewport": 1440,
       "violations": []
     },
@@ -178,11 +173,6 @@
       "violations": []
     },
     {
-      "page": "/rules",
-      "viewport": 1440,
-      "violations": []
-    },
-    {
       "page": "/privacy",
       "viewport": 1440,
       "violations": []
@@ -198,11 +188,6 @@
       "violations": []
     },
     {
-      "page": "/sign-up",
-      "viewport": 1440,
-      "violations": []
-    },
-    {
       "page": "/forgot-password",
       "viewport": 1440,
       "violations": []
@@ -210,36 +195,6 @@
     {
       "page": "/no-such-page",
       "viewport": 1440,
-      "violations": []
-    },
-    {
-      "page": "/nominees/sample-nominee-1a",
-      "viewport": 1440,
-      "violations": []
-    },
-    {
-      "page": "/verify",
-      "viewport": 1280,
-      "violations": []
-    },
-    {
-      "page": "/vote (signed-in member)",
-      "viewport": 1280,
-      "violations": []
-    },
-    {
-      "page": "/account (signed-in member)",
-      "viewport": 1280,
-      "violations": []
-    },
-    {
-      "page": "/account/ballot (signed-in member)",
-      "viewport": 1280,
-      "violations": []
-    },
-    {
-      "page": "/awards/2026/best-male-artist (signed-in member)",
-      "viewport": 1280,
       "violations": []
     },
     {
@@ -253,27 +208,22 @@
       "violations": []
     },
     {
-      "page": "/admin/nominees",
+      "page": "/admin/categories",
       "viewport": 1280,
       "violations": []
     },
     {
-      "page": "/admin/nominees/new",
+      "page": "/admin/honorees",
       "viewport": 1280,
       "violations": []
     },
     {
-      "page": "/admin/results",
+      "page": "/admin/honorees/new",
       "viewport": 1280,
       "violations": []
     },
     {
-      "page": "/admin/members",
-      "viewport": 1280,
-      "violations": []
-    },
-    {
-      "page": "/admin/monitor",
+      "page": "/admin/artists",
       "viewport": 1280,
       "violations": []
     },

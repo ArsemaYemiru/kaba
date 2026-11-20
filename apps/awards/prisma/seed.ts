@@ -14,23 +14,19 @@ import { normalizeEmail } from "../src/lib/email";
 import { getEnv } from "../src/lib/env";
 import { processImage } from "../src/lib/media/process-image";
 import { slugify } from "../src/lib/slug";
-import { voteHash } from "../src/lib/vote-hash";
 import am from "../src/messages/am.json";
 import { SiteSettingsSchema, type SiteSettingsData } from "../src/schemas/settings";
 import { ALBUMS, artworks, grainTile, HERO_POSTER, OG_IMAGE } from "./seed/artwork";
 import { FEATURED_ARTISTS, PUBLISHED_ARTISTS } from "./seed/artists";
-import { ABOUT, FAQ, NEWS, PRIVACY, RULES, TERMS, VIDEOS } from "./seed/content";
-import { CATEGORIES, nomineesFor, VOTABLE } from "./seed/edition";
-import { planCluster, planVoting, type PlanVote, type PlanVoter } from "./seed/members";
+import { ABOUT, FAQ, NEWS, PRIVACY, TERMS, VIDEOS } from "./seed/content";
+import { GENRES, honoreesFor, SAMPLE_CITATION } from "./seed/edition";
 
 const env = getEnv();
 const PROD = env.NODE_ENV === "production";
-const DAY = 86_400_000;
 
 const DEFAULTS = {
   admin: ["admin@fetaawards.com", "Feta#Admin2026"],
   editor: ["editor@fetaawards.com", "Feta#Editor2026"],
-  member: "Feta#Member2026",
 } as const;
 
 const tally: Record<string, { created: number; existing: number }> = {};
@@ -54,12 +50,12 @@ async function hasher() {
 
 async function upsertCredentialUser(
   hash: (p: string) => Promise<string>,
-  u: { email: string; name: string; password: string; role: "SUPER_ADMIN" | "EDITOR" | "MEMBER"; emailVerified: boolean; mustChangePassword: boolean; isSample: boolean },
+  u: { email: string; name: string; password: string; role: "SUPER_ADMIN" | "EDITOR"; emailVerified: boolean; mustChangePassword: boolean; isSample: boolean },
 ) {
   const email = u.email.toLowerCase();
   const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
   if (existing) {
-    count(u.role === "MEMBER" ? "User (demo member)" : "User (staff)", false);
+    count("User (staff)", false);
     return { id: existing.id, created: false };
   }
   const password = await hash(u.password);
@@ -73,14 +69,13 @@ async function upsertCredentialUser(
         role: u.role,
         emailVerified: u.emailVerified,
         mustChangePassword: u.mustChangePassword,
-        consentAt: u.role === "MEMBER" ? new Date() : null,
         isSample: u.isSample,
       },
     });
     await tx.account.create({ data: { userId: row.id, accountId: row.id, providerId: "credential", password } });
     return row;
   });
-  count(u.role === "MEMBER" ? "User (demo member)" : "User (staff)", true);
+  count("User (staff)", true);
   return { id: user.id, created: true };
 }
 
@@ -168,149 +163,61 @@ function currentYearEat(now: Date) {
   return Number(new Intl.DateTimeFormat("en", { year: "numeric", timeZone: env.APP_TIMEZONE }).format(now));
 }
 
+/** Sample edition: genre categories, each honoring fictional sample artists (A-76). */
 async function seedEdition(now: Date, heroMediaId: string | undefined) {
   const year = currentYearEat(now);
   const existing = await prisma.awardEdition.findUnique({ where: { year } });
   const edition =
     existing ??
     (await prisma.awardEdition.create({
-      data: {
-        year,
-        slug: String(year),
-        nameEn: `Feta Awards ${year}`,
-        nameAm: `ፈታ ሽልማቶች ${year}`,
-        phase: "VOTING_OPEN",
-        nomineesAnnouncedAt: new Date(now.getTime() - 10 * DAY),
-        votingOpensAt: new Date(now.getTime() - 3 * DAY),
-        votingClosesAt: new Date(now.getTime() + 14 * DAY),
-        ceremonyAt: new Date(now.getTime() + 21 * DAY),
-        heroMediaId,
-        status: "PUBLISHED",
-        isSample: true,
-      },
+      data: { year, slug: String(year), nameEn: `Feta Awards ${year}`, nameAm: `ፈታ ሽልማቶች ${year}`, heroMediaId, status: "PUBLISHED", isSample: true },
     }));
   count("AwardEdition (sample)", !existing);
 
-  const categoryIds = new Map<number, string>();
-  const nomineeIds = new Map<string, string>(); // "1:0" → id
-  for (const c of CATEGORIES) {
-    const slug = slugify(c.nameEn);
+  const honoreeIds = new Map<string, string>(); // "1:0" → id
+  for (const g of GENRES) {
+    const slug = slugify(g.nameEn);
     let category = await prisma.awardCategory.findUnique({ where: { editionId_slug: { editionId: edition.id, slug } } });
-    count("AwardCategory (sample)", !category);
+    count("AwardCategory (sample genre)", !category);
     category ??= await prisma.awardCategory.create({
       data: {
         editionId: edition.id,
         slug,
-        nameEn: c.nameEn,
-        nameAm: c.nameAm,
-        descriptionEn: `Sample category. The organizers will replace it with the official list.`,
-        icon: c.icon,
-        votingType: c.votingType,
-        publicWeight: c.publicWeight,
-        juryWeight: c.juryWeight,
-        nomineeType: c.nomineeType,
-        sortOrder: c.n,
+        nameEn: g.nameEn,
+        nameAm: g.nameAm,
+        descriptionEn: "Sample genre. The organizers will replace it with the official list.",
+        icon: g.icon,
+        sortOrder: g.n,
         status: "PUBLISHED",
         isSample: true,
       },
     });
-    categoryIds.set(c.n, category.id);
-    for (const [i, n] of nomineesFor(c).entries()) {
-      let nominee = await prisma.nominee.findUnique({ where: { slug: n.slug } });
-      count("Nominee (sample)", !nominee);
-      nominee ??= await prisma.nominee.create({
+    for (const [i, h] of honoreesFor(g).entries()) {
+      let artist = await prisma.artist.findUnique({ where: { slug: h.artistSlug }, select: { id: true } });
+      count("Artist (sample)", !artist);
+      artist ??= await prisma.artist.create({
+        data: { slug: h.artistSlug, nameEn: h.artistName, categories: ["MUSICIAN"], shortBioEn: "Fictional sample artist for demonstration.", status: "PUBLISHED", sortOrder: 1000, isSample: true },
+        select: { id: true },
+      });
+      let honoree = await prisma.nominee.findUnique({ where: { slug: h.slug } });
+      count("Honoree (sample)", !honoree);
+      honoree ??= await prisma.nominee.create({
         data: {
           categoryId: category.id,
-          slug: n.slug,
-          displayNameEn: n.displayNameEn,
-          workTitleEn: n.workTitleEn,
-          blurbEn: "Sample nominee for demonstration. Fictional and removable with “Remove sample data”.",
-          juryScore: n.juryScore,
-          sortOrder: n.sortOrder,
+          artistId: artist.id,
+          slug: h.slug,
+          displayNameEn: h.artistName,
+          workTitleEn: h.workTitleEn,
+          blurbEn: SAMPLE_CITATION,
+          sortOrder: h.sortOrder,
           status: "PUBLISHED",
           isSample: true,
         },
       });
-      nomineeIds.set(`${c.n}:${i}`, nominee.id);
+      honoreeIds.set(`${g.n}:${i}`, honoree.id);
     }
   }
-  return { edition, categoryIds, nomineeIds };
-}
-
-/* ─────────────────────────── members & votes ─────────────────────────── */
-
-async function seedMembersAndVotes(hash: (p: string) => Promise<string>, now: Date, ed: Awaited<ReturnType<typeof seedEdition>>) {
-  const password = process.env.SEED_MEMBER_PASSWORD || DEFAULTS.member;
-  const demo = [
-    { email: "member1@example.com", name: "Sample Member One", emailVerified: true, note: "verified, voted in 4 categories" },
-    { email: "member2@example.com", name: "Sample Member Two", emailVerified: true, note: "verified, no votes yet" },
-    { email: "member3@example.com", name: "Sample Member Three", emailVerified: false, note: "unverified (verification gate)" },
-  ];
-  const demoIds: Record<string, string> = {};
-  for (const d of demo) {
-    const r = await upsertCredentialUser(hash, { ...d, password, role: "MEMBER", mustChangePassword: false, isSample: true });
-    demoIds[d.email] = r.id;
-    logins.push({ role: "MEMBER", email: d.email, password: r.created ? password : "(existing, unchanged)", note: d.note });
-  }
-
-  // Synthetic history is generated once (skipped when the voters already exist).
-  if (await prisma.user.findUnique({ where: { email: "voter001@example.com" }, select: { id: true } })) {
-    count("User (synthetic voter)", false, 135);
-    return;
-  }
-  const opensAt = ed.edition.votingOpensAt!;
-  const plan = planVoting({ votable: VOTABLE.map((c) => c.n), opensAt, now, announcedAt: ed.edition.nomineesAnnouncedAt! });
-  const cluster = planCluster({ now });
-  const voters: PlanVoter[] = [...plan.voters, ...cluster.voters];
-  const votes: PlanVote[] = [...plan.votes, ...cluster.votes];
-
-  // member1 votes in the first 4 public categories.
-  const m1: PlanVoter = { email: "member1@example.com", name: "", createdAt: now, ip: "10.1.1.1", ua: "Mozilla/5.0 (Linux; Android 14) Chrome/131.0 Mobile" };
-  VOTABLE.slice(0, 4).forEach((c, i) => votes.push({ voterEmail: m1.email, categoryKey: c.n, nominee: i % 5, castAt: new Date(now.getTime() - (20 - i) * 3600_000) }));
-
-  // Synthetic voters: verified, no credential account (they can never sign in).
-  await prisma.user.createMany({
-    data: voters.map((v) => ({
-      email: v.email,
-      emailNormalized: normalizeEmail(v.email),
-      name: v.name,
-      displayName: v.name,
-      role: "MEMBER" as const,
-      emailVerified: true,
-      consentAt: v.createdAt,
-      isSample: true,
-      createdAt: v.createdAt,
-    })),
-  });
-  count("User (synthetic voter)", true, voters.length);
-  const userIds = new Map((await prisma.user.findMany({ where: { email: { in: voters.map((v) => v.email) } }, select: { id: true, email: true } })).map((u) => [u.email, u.id]));
-  userIds.set(m1.email, demoIds[m1.email]!);
-  const meta = new Map([...voters, m1].map((v) => [v.email, v]));
-
-  const voteRows: Prisma.VoteCreateManyInput[] = [];
-  const eventRows: Prisma.VoteEventCreateManyInput[] = [];
-  for (const v of votes) {
-    const who = meta.get(v.voterEmail)!;
-    const userId = userIds.get(v.voterEmail)!;
-    const categoryId = ed.categoryIds.get(v.categoryKey)!;
-    const nomineeId = ed.nomineeIds.get(`${v.categoryKey}:${v.nominee}`)!;
-    const ipHash = voteHash(who.ip, env.VOTE_HASH_SECRET);
-    const uaHash = voteHash(who.ua, env.VOTE_HASH_SECRET);
-    const base = { userId, editionId: ed.edition.id, categoryId, ipHash, uaHash, isSample: true };
-    if (v.changedFrom) {
-      const fromId = ed.nomineeIds.get(`${v.categoryKey}:${v.changedFrom.nominee}`)!;
-      voteRows.push({ ...base, nomineeId, createdAt: v.changedFrom.at, updatedAt: v.castAt });
-      eventRows.push({ ...base, type: "CAST", toNomineeId: fromId, createdAt: v.changedFrom.at });
-      eventRows.push({ ...base, type: "CHANGED", fromNomineeId: fromId, toNomineeId: nomineeId, createdAt: v.castAt });
-    } else {
-      voteRows.push({ ...base, nomineeId, createdAt: v.castAt, updatedAt: v.castAt });
-      eventRows.push({ ...base, type: "CAST", toNomineeId: nomineeId, createdAt: v.castAt });
-    }
-  }
-  await prisma.vote.createMany({ data: voteRows });
-  await prisma.voteEvent.createMany({ data: eventRows });
-  count("Vote (sample)", true, voteRows.length);
-  count("VoteEvent (sample)", true, eventRows.length);
+  return { edition, honoreeIds };
 }
 
 /* ─────────────────────────── content ─────────────────────────── */
@@ -377,23 +284,21 @@ async function seedNews(authorId: string, editionId: string | null) {
 async function seedSettings(o: { editionId: string | null; featuredNomineeIds: string[]; artistIds: string[]; posterId?: string; ogImageId?: string }) {
   const data: SiteSettingsData = SiteSettingsSchema.parse({
     branding: { logoId: null },
-    hero: { titleEn: "FETA AWARDS", wordmark: "ፈታ", taglineEn: "Celebrating Ethiopia's brightest stars. Your vote decides.", taglineAm: am.brand.tagline, videoId: null, posterId: o.posterId ?? null },
-    ticker: ["Create your account and vote", "Share your favorite nominee"],
+    hero: { titleEn: "FETA AWARDS", wordmark: "ፈታ", taglineEn: "Celebrating Ethiopian artists, genre by genre.", taglineAm: am.brand.tagline, videoId: null, posterId: o.posterId ?? null },
+    ticker: [],
     currentEditionId: o.editionId,
     featured: { nomineeIds: o.featuredNomineeIds, artistIds: o.artistIds },
     social: {},
     contact: { email: "" },
     sponsors: [],
-    seo: { title: "Feta Awards (ፈታ)", description: "Celebrating Ethiopia's brightest stars. Your vote decides.", ogImageId: o.ogImageId ?? null },
+    seo: { title: "Feta Awards (ፈታ)", description: "Feta Awards recognizes Ethiopian artists across every genre, from Classical to Bati to Afrobeat.", ogImageId: o.ogImageId ?? null },
     footer: {},
     pages: {
       about: { bodyEn: ABOUT, isTemplate: true },
-      rules: { bodyEn: RULES, isTemplate: true },
       privacy: { bodyEn: PRIVACY, isTemplate: true },
       terms: { bodyEn: TERMS, isTemplate: true },
       faq: FAQ,
     },
-    voting: { requirePhoneVerificationToVote: false },
   });
   const existing = await prisma.siteSettings.findUnique({ where: { id: 1 } });
   if (!existing) {
@@ -420,17 +325,13 @@ async function seedSettings(o: { editionId: string | null; featuredNomineeIds: s
 /* ─────────────────────────── summary ─────────────────────────── */
 
 async function summary() {
-  const [staff, members, verified, artists, editions, categories, nominees, votes, voided, events, media, videos, albums, news] = await Promise.all([
-    prisma.user.count({ where: { role: { in: ["SUPER_ADMIN", "EDITOR"] } } }),
-    prisma.user.count({ where: { role: "MEMBER" } }),
-    prisma.user.count({ where: { role: "MEMBER", emailVerified: true } }),
-    prisma.artist.count({ where: { status: "PUBLISHED" } }),
+  const [staff, artists, sampleArtists, editions, categories, honorees, media, videos, albums, news] = await Promise.all([
+    prisma.user.count(),
+    prisma.artist.count({ where: { status: "PUBLISHED", isSample: false } }),
+    prisma.artist.count({ where: { isSample: true } }),
     prisma.awardEdition.count(),
     prisma.awardCategory.count(),
     prisma.nominee.count(),
-    prisma.vote.count(),
-    prisma.vote.count({ where: { NOT: { voidedAt: null } } }),
-    prisma.voteEvent.count(),
     prisma.media.count(),
     prisma.video.count(),
     prisma.album.count(),
@@ -441,13 +342,11 @@ async function summary() {
   console.log("Database totals");
   console.table({
     Staff: staff,
-    "Members (verified / total)": `${verified} / ${members}`,
     "Artists (published)": artists,
+    "Sample artists": sampleArtists,
     Editions: editions,
-    Categories: categories,
-    Nominees: nominees,
-    "Votes (voided)": `${votes} (${voided})`,
-    "Vote events": events,
+    "Genre categories": categories,
+    Honorees: honorees,
     Media: media,
     Videos: videos,
     Albums: albums,
@@ -455,7 +354,7 @@ async function summary() {
   });
   console.log("Logins");
   console.table(logins);
-  if (!PROD) console.log("Mail (dev): http://localhost:8026 · 120 synthetic voters + 15-account burst have no password and can't sign in.");
+  if (!PROD) console.log("Mail (dev, staff password resets only): http://localhost:8026");
 }
 
 async function main() {
@@ -470,11 +369,10 @@ async function main() {
   } else {
     const media = await seedArtwork(staff.SUPER_ADMIN);
     const ed = await seedEdition(now, media.get(HERO_POSTER));
-    await seedMembersAndVotes(hash, now, ed);
     await seedVideos(ed.edition.id);
     await seedAlbums(media, ed.edition.id);
     await seedNews(staff.SUPER_ADMIN, ed.edition.id);
-    const featuredNomineeIds = [1, 2, 3, 4].map((n) => ed.nomineeIds.get(`${n}:0`)!).filter(Boolean);
+    const featuredNomineeIds = [1, 2, 3, 4].map((n) => ed.honoreeIds.get(`${n}:0`)!).filter(Boolean);
     await seedSettings({ editionId: ed.edition.id, featuredNomineeIds, artistIds, posterId: media.get(HERO_POSTER), ogImageId: media.get(OG_IMAGE) });
   }
   await summary();

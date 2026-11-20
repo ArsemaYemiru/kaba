@@ -1,9 +1,9 @@
 /**
  * Content Security Policy + security headers (spec §11). Shared by next.config.ts
- * (every response) and the proxy (auth/account/admin use frame-ancestors 'none').
+ * (every response) and the proxy (auth/admin pages use frame-ancestors 'none').
  * Pages are cached and shared, so a per-request nonce isn't possible: scripts and
- * styles allow 'unsafe-inline' (Next inline bootstraps) but only from our origin,
- * Cloudflare Turnstile and the optional analytics host. No `@/` imports: this file
+ * styles allow 'unsafe-inline' (Next inline bootstraps) but only from our origin
+ * and the optional analytics host. No `@/` imports: this file
  * is loaded by next.config.ts.
  */
 const origin = (u: string | undefined) => {
@@ -22,13 +22,13 @@ export function contentSecurityPolicy(frameAncestors: "'self'" | "'none'" = "'se
   const analytics = process.env.ANALYTICS_PROVIDER ? origin(process.env.ANALYTICS_SCRIPT_URL || (process.env.ANALYTICS_PROVIDER === "plausible" ? "https://plausible.io" : "https://cloud.umami.is")) : null;
   return [
     "default-src 'self'",
-    `script-src ${list("'self'", "'unsafe-inline'", dev && "'unsafe-eval'", "https://challenges.cloudflare.com", analytics)}`,
+    `script-src ${list("'self'", "'unsafe-inline'", dev && "'unsafe-eval'", analytics)}`,
     "style-src 'self' 'unsafe-inline'",
     `img-src ${list("'self'", "data:", "blob:", "https://i.ytimg.com", r2)}`,
     `media-src ${list("'self'", "blob:", r2)}`,
     "font-src 'self' data:",
-    `connect-src ${list("'self'", "https://challenges.cloudflare.com", "https://*.r2.cloudflarestorage.com", analytics, dev && "ws: wss:")}`,
-    "frame-src https://challenges.cloudflare.com https://www.youtube-nocookie.com https://www.youtube.com",
+    `connect-src ${list("'self'", "https://*.r2.cloudflarestorage.com", analytics, dev && "ws: wss:")}`,
+    "frame-src https://www.youtube-nocookie.com https://www.youtube.com",
     "worker-src 'self' blob:",
     "manifest-src 'self'",
     "object-src 'none'",

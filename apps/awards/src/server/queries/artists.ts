@@ -7,15 +7,9 @@ import { mediaSelect } from "./media";
 
 const published = { status: "PUBLISHED" } as const;
 
-/**
- * Nominations shown publicly: published nominee in a published category of a
- * published edition whose nominees have been announced (not DRAFT).
- */
-const PUBLIC_NOMINATION: Prisma.NomineeWhereInput = {
-  ...published,
-  category: { ...published, edition: { ...published, phase: { not: "DRAFT" } } },
-};
-const NOMINATED: Prisma.ArtistWhereInput = { nominees: { some: { nominee: PUBLIC_NOMINATION } } };
+/** Recognitions shown publicly: a published honoree entry in a published genre of an announced edition (A-76). */
+const PUBLIC_HONOR: Prisma.NomineeWhereInput = { ...published, category: { ...published, edition: published } };
+const HONORED: Prisma.ArtistWhereInput = { honors: { some: PUBLIC_HONOR } };
 
 export const CATEGORIES = ["SINGER", "MUSICIAN", "ACTOR", "COMEDIAN", "DANCER", "PRODUCER_DJ", "HOST_MEDIA"] as const;
 
@@ -27,23 +21,18 @@ export const artistCardSelect = {
   categories: true,
   isLegend: true,
   portrait: { select: mediaSelect },
-  nominees: {
-    where: { nominee: PUBLIC_NOMINATION },
-    select: { nominee: { select: { isWinner: true, category: { select: { edition: { select: { phase: true } } } } } } },
-  },
+  _count: { select: { honors: { where: PUBLIC_HONOR } } },
 } satisfies Prisma.ArtistSelect;
 
 export type ArtistCardData = Prisma.ArtistGetPayload<{ select: typeof artistCardSelect }>;
-export const isNominee = (a: Pick<ArtistCardData, "nominees">) => a.nominees.length > 0;
-/** A win counts only once that edition's winners are announced. */
-export const isWinner = (a: Pick<ArtistCardData, "nominees">) =>
-  a.nominees.some(({ nominee: n }) => n.isWinner && n.category.edition.phase === "WINNERS_ANNOUNCED");
+/** Recognized in at least one announced Feta Awards edition. */
+export const isHonored = (a: Pick<ArtistCardData, "_count">) => a._count.honors > 0;
 
 export const ArtistFiltersSchema = z.object({
   q: z.string().trim().max(80).optional().catch(undefined),
   category: z.enum(CATEGORIES).optional().catch(undefined),
   legends: z.literal("1").optional().catch(undefined),
-  nominees: z.literal("1").optional().catch(undefined),
+  honored: z.literal("1").optional().catch(undefined),
   sort: z.enum(["featured", "az", "za"]).default("featured").catch("featured"),
 });
 export type ArtistFilters = z.infer<typeof ArtistFiltersSchema>;
@@ -65,7 +54,7 @@ export async function listArtists(f: ArtistFilters) {
     });
   if (f.category) and.push({ categories: { has: f.category } });
   if (f.legends) and.push({ isLegend: true });
-  if (f.nominees) and.push(NOMINATED);
+  if (f.honored) and.push(HONORED);
   return prisma.artist.findMany({
     where: { AND: and },
     select: artistCardSelect,
@@ -130,27 +119,23 @@ export async function getArtist(slug: string) {
           },
         },
       },
-      nominees: {
-        where: { nominee: PUBLIC_NOMINATION },
+      honors: {
+        where: PUBLIC_HONOR,
+        orderBy: [{ category: { edition: { year: "desc" } } }, { category: { sortOrder: "asc" } }],
         select: {
-          nominee: {
-            select: {
-              slug: true,
-              displayNameEn: true,
-              workTitleEn: true,
-              isWinner: true,
-              isSample: true,
-              category: { select: { slug: true, nameEn: true, nameAm: true, edition: { select: { slug: true, year: true, phase: true } } } },
-            },
-          },
+          slug: true,
+          workTitleEn: true,
+          workTitleAm: true,
+          blurbEn: true,
+          blurbAm: true,
+          isSample: true,
+          category: { select: { slug: true, nameEn: true, nameAm: true, edition: { select: { slug: true, year: true, nameEn: true } } } },
         },
       },
     },
   });
   if (!artist) return null;
-  const nominations = artist.nominees
-    .map(({ nominee: n }) => ({ ...n, isWinner: n.isWinner && n.category.edition.phase === "WINNERS_ANNOUNCED" }))
-    .sort((a, b) => b.category.edition.year - a.category.edition.year);
+  const { honors: recognitions, ...rest } = artist;
   const related = artist.categories.length
     ? await prisma.artist.findMany({
         where: { ...published, slug: { not: slug }, categories: { hasSome: artist.categories.filter((c) => c !== "OTHER") } },
@@ -159,7 +144,7 @@ export async function getArtist(slug: string) {
         take: 4,
       })
     : [];
-  return { ...artist, nominations, related };
+  return { ...rest, recognitions, related };
 }
 
 export async function artistSlugs() {

@@ -2,13 +2,13 @@ import { toNextJsHandler } from "better-auth/next-js";
 import { auth } from "@/lib/auth";
 
 /**
- * Better Auth HTTP surface, reduced to an allow-list (A-45). Forms use Server
- * Actions (Turnstile, consent, rate limits) that call `auth.api` directly, so
- * the only public HTTP routes are OAuth (Google) and session reads.
+ * Better Auth HTTP surface, reduced to an allow-list (A-45). Staff forms use
+ * Server Actions (rate limits) that call `auth.api` directly, so the only
+ * public HTTP routes are session reads.
  */
 const ALLOWED = {
-  GET: [/^\/api\/auth\/get-session$/, /^\/api\/auth\/callback\/google$/, /^\/api\/auth\/ok$/],
-  POST: [/^\/api\/auth\/sign-in\/social$/, /^\/api\/auth\/callback\/google$/],
+  GET: [/^\/api\/auth\/get-session$/, /^\/api\/auth\/ok$/],
+  POST: [] as RegExp[],
 };
 
 const handler = toNextJsHandler(auth);

@@ -7,11 +7,11 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { importNomineeCsv, previewNomineeCsv, type CsvPreview } from "@/server/actions/admin/awards";
+import { importHonoreeCsv, previewHonoreeCsv, type CsvPreview } from "@/server/actions/admin/awards";
 
-const TEMPLATE = `category,displayNameEn,displayNameAm,workTitleEn,workTitleAm,blurbEn,blurbAm,youtubeUrl,artists,status
-best-male-artist,Artist Name,,,,"Short blurb",,,,DRAFT
-song-of-the-year,Credited Artist,,Song Title,,,,https://www.youtube.com/watch?v=xxxxxxxxxxx,,DRAFT
+const TEMPLATE = `category,artist,blurbEn,blurbAm,workTitleEn,workTitleAm,youtubeUrl,status
+classical,artist-slug,"Why this artist is recognized",,,,,DRAFT
+afrobeat,another-artist-slug,"Why this artist is recognized",,Song Title,,https://www.youtube.com/watch?v=xxxxxxxxxxx,DRAFT
 `;
 
 /** Bulk import from CSV with a validation preview before saving (spec §6). */
@@ -42,11 +42,11 @@ export function CsvImport({ editions }: { editions: { id: string; label: string 
         }}
       >
         <DialogContent className="max-h-[90dvh] overflow-y-auto border-line bg-surface sm:max-w-4xl">
-          <DialogTitle className="font-display text-lg font-bold">Import nominees from CSV</DialogTitle>
+          <DialogTitle className="font-display text-lg font-bold">Import honorees from CSV</DialogTitle>
           <DialogDescription>
-            Columns: <code className="text-xs">category</code> (slug or name in the edition), <code className="text-xs">displayNameEn</code>, and optionally displayNameAm, workTitleEn, workTitleAm, blurbEn, blurbAm,
-            youtubeUrl, artists (artist slugs separated by “;”), status (DRAFT/PUBLISHED). Nothing is saved until every row is valid.{" "}
-            <a href={`data:text/csv;charset=utf-8,${encodeURIComponent(TEMPLATE)}`} download="nominees-template.csv" className="font-semibold text-gold hover:underline">
+            Columns: <code className="text-xs">category</code> (genre slug or name in the edition), <code className="text-xs">artist</code> (the artist&apos;s slug), and optionally blurbEn and blurbAm (the citation),
+            workTitleEn, workTitleAm, youtubeUrl, status (DRAFT/PUBLISHED). Nothing is saved until every row is valid.{" "}
+            <a href={`data:text/csv;charset=utf-8,${encodeURIComponent(TEMPLATE)}`} download="honorees-template.csv" className="font-semibold text-gold hover:underline">
               Download a template
             </a>
           </DialogDescription>
@@ -81,7 +81,7 @@ export function CsvImport({ editions }: { editions: { id: string; label: string 
               type="button"
               size="sm"
               disabled={!csv || !editionId || pending}
-              onClick={() => start(async () => setPreview(await previewNomineeCsv(editionId, csv)))}
+              onClick={() => start(async () => setPreview(await previewHonoreeCsv(editionId, csv)))}
             >
               {pending && !preview ? <Loader2 className="animate-spin" /> : null} Preview
             </Button>
@@ -103,7 +103,7 @@ export function CsvImport({ editions }: { editions: { id: string; label: string 
                     <tr>
                       <th className="px-2 py-2">Line</th>
                       <th className="px-2 py-2">Category</th>
-                      <th className="px-2 py-2">Nominee</th>
+                      <th className="px-2 py-2">Artist</th>
                       <th className="px-2 py-2">Status</th>
                       <th className="px-2 py-2">Problems</th>
                     </tr>
@@ -114,8 +114,8 @@ export function CsvImport({ editions }: { editions: { id: string; label: string 
                         <td className="px-2 py-1.5 tabular-nums">{r.line}</td>
                         <td className="px-2 py-1.5">{r.categoryName ?? <span className="text-red">{r.values.category || "—"}</span>}</td>
                         <td className="px-2 py-1.5">
-                          {r.values.workTitleEn ? `${r.values.workTitleEn} · ` : ""}
-                          {r.values.displayNameEn}
+                          {r.values.artist}
+                          {r.values.workTitleEn ? ` · ${r.values.workTitleEn}` : ""}
                         </td>
                         <td className="px-2 py-1.5">{r.values.status || "DRAFT"}</td>
                         <td className="px-2 py-1.5 text-red">{r.errors.join("; ")}</td>
@@ -130,9 +130,9 @@ export function CsvImport({ editions }: { editions: { id: string; label: string 
                   disabled={!!preview.invalid || !preview.valid || pending}
                   onClick={() =>
                     start(async () => {
-                      const r = await importNomineeCsv(editionId, csv);
+                      const r = await importHonoreeCsv(editionId, csv);
                       if (r.ok) {
-                        toast.success(`Imported ${r.count} nominees`);
+                        toast.success(`Imported ${r.count} honorees`);
                         setOpen(false);
                         reset();
                         router.refresh();
@@ -140,7 +140,7 @@ export function CsvImport({ editions }: { editions: { id: string; label: string 
                     })
                   }
                 >
-                  {pending ? <Loader2 className="animate-spin" /> : <Upload />} Import {preview.valid} nominees
+                  {pending ? <Loader2 className="animate-spin" /> : <Upload />} Import {preview.valid} honorees
                 </Button>
               </div>
             </>

@@ -34,7 +34,7 @@ export async function saveSettingsSection(input: unknown): Promise<SettingsResul
   if (section === "pages") {
     const pg = data.data as SiteSettingsData["pages"];
     const clean = (p: SiteSettingsData["pages"]["about"]) => ({ ...p, bodyEn: sanitizeRichText(p.bodyEn) ?? "", bodyAm: sanitizeRichText(p.bodyAm) ?? undefined });
-    value = { ...pg, about: clean(pg.about), rules: clean(pg.rules), privacy: clean(pg.privacy), terms: clean(pg.terms) };
+    value = { ...pg, about: clean(pg.about), privacy: clean(pg.privacy), terms: clean(pg.terms) };
   }
   if (section === "currentEditionId") {
     await prisma.siteSettings.update({ where: { id: 1 }, data: { currentEditionId: (value as string | null) ?? null } });
@@ -48,9 +48,9 @@ export async function saveSettingsSection(input: unknown): Promise<SettingsResul
 
 /**
  * Danger zone (spec §6): delete everything flagged isSample (sample editions
- * with their categories, nominees, votes, vote events and snapshots; demo and
- * synthetic members; sample media, videos, albums and news), clear Site
- * Settings references to it, and leave artists, settings and staff intact.
+ * with their genres and honorees; sample media, videos, albums and news),
+ * delete fictional sample artists, clear Site Settings references to it, and
+ * leave real artists, settings and staff intact.
  */
 export async function removeSampleData(input: unknown): Promise<{ ok: true; removed: Record<string, number> } | Denied | { ok: false; status: 400; error: string }> {
   const auth = await authorize("SUPER_ADMIN");

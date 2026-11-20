@@ -5,31 +5,30 @@ import { prisma } from "@/lib/db";
 const published = { status: "PUBLISHED" } as const;
 const mediaSel = { select: { storageKey: true, variants: true } } as const;
 
-export function ogNominee(slug: string) {
+export function ogHonoree(slug: string) {
   return prisma.nominee.findFirst({
-    where: { slug, ...published, category: { ...published, edition: { ...published, phase: { not: "DRAFT" } } } },
+    where: { slug, ...published, artist: published, category: { ...published, edition: published } },
     select: {
       displayNameEn: true,
       displayNameAm: true,
       workTitleEn: true,
-      workTitleAm: true,
-      isWinner: true,
       isSample: true,
       image: mediaSel,
-      category: { select: { nameEn: true, votingType: true, edition: { select: { year: true, phase: true } } } },
+      artist: { select: { portrait: mediaSel } },
+      category: { select: { nameEn: true, edition: { select: { year: true } } } },
     },
   });
 }
 
 export function ogCategory(edition: string, slug: string) {
   return prisma.awardCategory.findFirst({
-    where: { slug, ...published, edition: { slug: edition, ...published, phase: { not: "DRAFT" } } },
-    select: { nameEn: true, nameAm: true, votingType: true, isSample: true, edition: { select: { year: true, phase: true } } },
+    where: { slug, ...published, edition: { slug: edition, ...published } },
+    select: { nameEn: true, nameAm: true, isSample: true, edition: { select: { year: true } }, _count: { select: { nominees: { where: { ...published, artist: published } } } } },
   });
 }
 
 export function ogEdition(slug: string) {
-  return prisma.awardEdition.findFirst({ where: { slug, ...published }, select: { year: true, nameEn: true, nameAm: true, phase: true, isSample: true, heroMedia: mediaSel } });
+  return prisma.awardEdition.findFirst({ where: { slug, ...published }, select: { year: true, nameEn: true, nameAm: true, isSample: true, heroMedia: mediaSel, _count: { select: { categories: { where: published } } } } });
 }
 
 export function ogArtist(slug: string) {

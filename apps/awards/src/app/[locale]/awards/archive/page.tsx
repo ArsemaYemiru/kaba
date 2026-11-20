@@ -16,7 +16,7 @@ export default async function ArchivePage({ params }: PageProps<"/[locale]/award
   await connection();
   const { locale } = await params;
   setRequestLocale(locale);
-  const [t, tp, tn, editions] = await Promise.all([getTranslations("awards"), getTranslations("phase"), getTranslations("nominee"), listEditions()]);
+  const [t, th, editions] = await Promise.all([getTranslations("awards"), getTranslations("honoree"), listEditions()]);
   return (
     <>
       <PageHeader kicker={t("title")} title={t("archiveTitle")} intro={t("archiveIntro")} />
@@ -30,10 +30,11 @@ export default async function ArchivePage({ params }: PageProps<"/[locale]/award
                   <span className="min-w-0 flex-1">
                     <span className="block font-display text-2xl font-extrabold">{e.year}</span>
                     <span className="block text-sm text-muted-foreground">{e.nameEn}</span>
-                    <span className="mt-2 flex flex-wrap gap-1.5">
-                      <Chip size="sm" variant={e.phase === "WINNERS_ANNOUNCED" ? "foil" : "muted"}>{tp(e.phase)}</Chip>
-                      {e.isSample ? <Chip size="sm" variant="sample">{tn("sample")}</Chip> : null}
-                    </span>
+                    {e.isSample ? (
+                      <span className="mt-2 flex flex-wrap gap-1.5">
+                        <Chip size="sm" variant="sample">{th("sample")}</Chip>
+                      </span>
+                    ) : null}
                   </span>
                   <ArrowRight className="size-5 text-gold transition-transform group-hover:translate-x-1" aria-hidden="true" />
                 </Link>

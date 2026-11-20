@@ -34,7 +34,7 @@ export async function mediaUsages(ids: string[]): Promise<Map<string, MediaUsage
   }
   for (const g of artistGallery) add(g.mediaId, { label: `Artist gallery · ${g.artist.nameEn}`, href: `/admin/artists/${g.artist.id}` });
   for (const e of editions) add(e.heroMediaId, { label: `Edition hero · ${e.nameEn}`, href: `/admin/editions/${e.id}` });
-  for (const n of nominees) add(n.imageId, { label: `Nominee image · ${n.workTitleEn ?? n.displayNameEn}`, href: `/admin/nominees/${n.id}` });
+  for (const n of nominees) add(n.imageId, { label: `Honoree image · ${n.displayNameEn}`, href: `/admin/honorees/${n.id}` });
   for (const v of videos) {
     add(v.mediaId, { label: `Video file · ${v.titleEn}`, href: `/admin/videos/${v.id}` });
     add(v.posterId, { label: `Video poster · ${v.titleEn}`, href: `/admin/videos/${v.id}` });

@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { Sidebar } from "@/components/admin/sidebar";
 import { Topbar } from "@/components/admin/topbar";
 import { getSession } from "@/lib/authz";
-import { monitorAlertCount } from "@/server/admin/monitor";
 
 /** Admin shell: sidebar + top bar. Session-dependent parts stream inside Suspense. */
 export default function PanelLayout({ children }: LayoutProps<"/admin">) {
@@ -26,18 +25,17 @@ export default function PanelLayout({ children }: LayoutProps<"/admin">) {
 async function shellData() {
   const s = await getSession();
   if (!s) return null;
-  const unread = await monitorAlertCount();
-  return { user: s.user as typeof s.user & { role: "SUPER_ADMIN" | "EDITOR" }, unread };
+  return { user: s.user as typeof s.user & { role: "SUPER_ADMIN" | "EDITOR" } };
 }
 
 async function ShellSidebar() {
   const d = await shellData();
   if (!d) return null;
-  return <Sidebar isSuperAdmin={d.user.role === "SUPER_ADMIN"} unread={d.unread} />;
+  return <Sidebar isSuperAdmin={d.user.role === "SUPER_ADMIN"} />;
 }
 
 async function ShellTopbar() {
   const d = await shellData();
   if (!d) return null;
-  return <Topbar name={d.user.name} email={d.user.email} role={d.user.role} unread={d.unread} />;
+  return <Topbar name={d.user.name} email={d.user.email} role={d.user.role} />;
 }

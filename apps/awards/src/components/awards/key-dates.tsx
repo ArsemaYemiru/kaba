@@ -3,15 +3,12 @@ import { getTranslations } from "next-intl/server";
 import { formatEat } from "@/lib/time";
 import { cn } from "@/lib/utils";
 
-type E = { nomineesAnnouncedAt: Date | null; votingOpensAt: Date | null; votingClosesAt: Date | null; ceremonyAt: Date | null; venue: string | null; broadcastPartner: string | null };
+type E = { ceremonyAt: Date | null; venue: string | null; broadcastPartner: string | null };
 
-/** Edition milestones in East Africa Time; unknown values say "To be confirmed" (never invented). */
+/** Awards night, venue and broadcast partner in East Africa Time; unknown values say "To be confirmed" (never invented). */
 export async function KeyDates({ edition, className }: { edition: E; className?: string }) {
   const [t, tc] = await Promise.all([getTranslations("awards"), getTranslations("common")]);
   const rows: [string, string][] = [
-    [t("nomineesAnnounced"), edition.nomineesAnnouncedAt ? `${formatEat(edition.nomineesAnnouncedAt, "en-GB", { dateStyle: "long" })}` : tc("tbc")],
-    [t("votingOpens"), edition.votingOpensAt ? `${formatEat(edition.votingOpensAt)} ${tc("eat")}` : tc("tbc")],
-    [t("votingCloses"), edition.votingClosesAt ? `${formatEat(edition.votingClosesAt)} ${tc("eat")}` : tc("tbc")],
     [t("ceremony"), edition.ceremonyAt ? `${formatEat(edition.ceremonyAt)} ${tc("eat")}` : tc("tbc")],
     [t("venue"), edition.venue ?? tc("tbc")],
     ...(edition.broadcastPartner ? [[t("broadcast"), edition.broadcastPartner] as [string, string]] : []),

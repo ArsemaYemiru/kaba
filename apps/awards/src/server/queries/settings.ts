@@ -6,23 +6,21 @@ import { mediaSelect, type MediaLite } from "./media";
 
 const FALLBACK: SiteSettingsData = {
   branding: { logoId: null },
-  hero: { titleEn: "FETA AWARDS", wordmark: "ፈታ", taglineEn: "Celebrating Ethiopia's brightest stars. Your vote decides." },
+  hero: { titleEn: "FETA AWARDS", wordmark: "ፈታ", taglineEn: "Celebrating Ethiopian artists, genre by genre." },
   ticker: [],
   currentEditionId: null,
   featured: { nomineeIds: [], artistIds: [] },
   social: {},
   contact: {},
   sponsors: [],
-  seo: { title: "Feta Awards (ፈታ)", description: "Celebrating Ethiopia's brightest stars. Your vote decides." },
+  seo: { title: "Feta Awards (ፈታ)", description: "Feta Awards recognizes Ethiopian artists across every genre, from Classical to Bati to Afrobeat." },
   footer: {},
   pages: {
     about: { bodyEn: "", isTemplate: true },
-    rules: { bodyEn: "", isTemplate: true },
     privacy: { bodyEn: "", isTemplate: true },
     terms: { bodyEn: "", isTemplate: true },
     faq: [],
   },
-  voting: { requirePhoneVerificationToVote: false },
 };
 
 export type PublicSettings = SiteSettingsData & { media: Record<string, MediaLite> };

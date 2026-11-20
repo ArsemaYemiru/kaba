@@ -11,13 +11,12 @@ import { ADMIN_NAV, isActivePath } from "./nav";
 
 const KEY = "feta-admin-sidebar";
 
-export function NavList({ isSuperAdmin, unread, collapsed, onNavigate }: { isSuperAdmin: boolean; unread: number; collapsed?: boolean; onNavigate?: () => void }) {
+export function NavList({ isSuperAdmin, collapsed, onNavigate }: { isSuperAdmin: boolean; collapsed?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
     <ul className="flex flex-col gap-0.5">
       {ADMIN_NAV.filter((i) => !i.superAdminOnly || isSuperAdmin).map((item) => {
         const active = isActivePath(pathname, item.href);
-        const badge = item.badge === "monitor" && unread > 0 ? unread : null;
         return (
           <li key={item.href} className={cn(item.section && "mt-3 first:mt-0")}>
             {item.section && !collapsed ? <p className="px-3 pb-1 text-[0.625rem] font-bold tracking-[0.2em] text-muted-foreground uppercase">{item.section}</p> : null}
@@ -35,17 +34,6 @@ export function NavList({ isSuperAdmin, unread, collapsed, onNavigate }: { isSup
               {active ? <span aria-hidden="true" className="absolute top-2 bottom-2 left-0 w-0.5 rounded-full bg-gold" /> : null}
               <item.icon className="size-4 shrink-0" aria-hidden="true" />
               <span className={cn("truncate", collapsed && "sr-only")}>{item.label}</span>
-              {badge ? (
-                <span
-                  className={cn(
-                    "ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-red px-1.5 text-[0.6875rem] font-bold text-bg tabular-nums",
-                    collapsed && "absolute top-1 right-1 ml-0",
-                  )}
-                  aria-label={`${badge} to review`}
-                >
-                  {badge > 99 ? "99+" : badge}
-                </span>
-              ) : null}
             </Link>
           </li>
         );
@@ -55,7 +43,7 @@ export function NavList({ isSuperAdmin, unread, collapsed, onNavigate }: { isSup
 }
 
 /** Collapsible desktop sidebar (state remembered per browser). */
-export function Sidebar({ isSuperAdmin, unread }: { isSuperAdmin: boolean; unread: number }) {
+export function Sidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const [collapsed, setCollapsed] = useState(false);
   useEffect(() => {
     let v = false;
@@ -93,7 +81,7 @@ export function Sidebar({ isSuperAdmin, unread }: { isSuperAdmin: boolean; unrea
       </div>
       <TibebStrip height={4} />
       <nav aria-label="Admin" className="flex-1 overflow-y-auto p-2 pt-3">
-        <NavList isSuperAdmin={isSuperAdmin} unread={unread} collapsed={collapsed} />
+        <NavList isSuperAdmin={isSuperAdmin} collapsed={collapsed} />
       </nav>
       <div className="border-t border-line p-2">
         <button

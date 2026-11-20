@@ -20,10 +20,16 @@ PRODUCTION_URL=http://13.140.175.12:3006
 WEB_BIND_IP=0.0.0.0
 WEB_PORT=3006
 STORAGE_DRIVER=local
-SEED_ADMIN_EMAIL=admin@fetashow.com
+SEED_ADMIN_EMAIL=admin@fetaawards.com
 SEED_ADMIN_PASSWORD=$(openssl rand -hex 24)
-SEED_EDITOR_EMAIL=editor@fetashow.com
+SEED_EDITOR_EMAIL=editor@fetaawards.com
 SEED_EDITOR_PASSWORD=$(openssl rand -hex 24)
+# Optional: staff password-reset emails.
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+MAIL_FROM=
 EOF
   chmod 600 .env
   echo 'Created /opt/kaba-prod/.env with random credentials.'

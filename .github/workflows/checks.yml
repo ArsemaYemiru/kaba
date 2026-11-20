@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Validate Prisma schema
-        run: pnpm --filter web exec prisma validate
+        run: pnpm --filter awards exec prisma validate
       - name: Lint
         run: pnpm lint
       - name: Check types
@@ -41,19 +41,19 @@ jobs:
           context: .
           target: runner
           load: true
-          tags: kaba-ci-web:test
+          tags: kaba-ci-awards:test
           build-args: NEXT_PUBLIC_SITE_URL=http://localhost:3006
-          cache-from: type=gha,scope=kaba-web
-          cache-to: type=gha,mode=max,scope=kaba-web,ignore-error=true
+          cache-from: type=gha,scope=kaba-awards
+          cache-to: type=gha,mode=max,scope=kaba-awards,ignore-error=true
       - name: Build migration image
         uses: docker/build-push-action@v6
         with:
           context: .
           target: tooling
           load: true
-          tags: kaba-ci-tooling:test
-          cache-from: type=gha,scope=kaba-tooling
-          cache-to: type=gha,mode=max,scope=kaba-tooling,ignore-error=true
+          tags: kaba-ci-awards-tooling:test
+          cache-from: type=gha,scope=kaba-awards-tooling
+          cache-to: type=gha,mode=max,scope=kaba-awards-tooling,ignore-error=true
       - name: Verify migrations and container readiness
         env:
           IMAGE_PREFIX: kaba-ci
@@ -71,8 +71,12 @@ jobs:
           "${compose[@]}" up -d --wait --wait-timeout 120 proxy
           curl --fail --retry 5 --retry-delay 2 http://localhost:3006/api/health
           curl --fail --output /dev/null http://localhost:3006/
-          curl --fail --output /dev/null http://localhost:3006/admin/login
+          curl --fail --output /dev/null http://localhost:3006/artists
+          curl --fail --output /dev/null http://localhost:3006/awards/archive
+          curl --fail --output /dev/null http://localhost:3006/sign-in
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3006/admin/login)" = 307
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3006/artists/deployment-check-missing)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3006/sign-up)" = 404
       - name: Container diagnostics
         if: failure()
         env:

@@ -9,7 +9,7 @@ import { useRouter } from "@/i18n/navigation";
 import { rank } from "@/lib/search-rank";
 import type { SearchItem } from "@/server/queries/search";
 
-const ICONS = { nominee: Award, artist: UserRound, news: Newspaper } as const;
+const ICONS = { honoree: Award, artist: UserRound, news: Newspaper } as const;
 
 /** The search palette itself (cmdk); loaded on first open. */
 export default function CommandPalette({ open, setOpen, items, error }: { open: boolean; setOpen: (o: boolean) => void; items: SearchItem[] | null; error: boolean }) {
@@ -24,7 +24,7 @@ export default function CommandPalette({ open, setOpen, items, error }: { open: 
   const groups = useMemo(() => {
     const order: SearchItem["kind"][] = [];
     for (const r of ranked) if (!order.includes(r.kind)) order.push(r.kind);
-    for (const k of ["nominee", "artist", "news"] as const) if (!order.includes(k)) order.push(k);
+    for (const k of ["honoree", "artist", "news"] as const) if (!order.includes(k)) order.push(k);
     return order.map((kind) => ({ kind, list: ranked.filter((i) => i.kind === kind) }));
   }, [ranked]);
   const top = ranked[0]?.href;

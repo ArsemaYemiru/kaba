@@ -27,9 +27,10 @@ describe("JSON-LD (spec §10)", () => {
 });
 
 describe("security headers (spec §11)", () => {
-  it("CSP allows Turnstile and YouTube, blocks plugins/base hijacking", () => {
+  it("CSP allows YouTube, blocks plugins/base hijacking", () => {
     const csp = contentSecurityPolicy();
-    for (const d of ["object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'self'", "https://challenges.cloudflare.com", "https://www.youtube-nocookie.com"]) expect(csp).toContain(d);
+    for (const d of ["object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'self'", "https://www.youtube-nocookie.com"]) expect(csp).toContain(d);
+    expect(csp).not.toContain("challenges.cloudflare.com");
     expect(contentSecurityPolicy("'none'")).toContain("frame-ancestors 'none'");
   });
   it("sends nosniff, referrer and permissions policies", () => {

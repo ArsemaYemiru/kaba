@@ -1,6 +1,6 @@
-// Feta Awards (spec §8). Better Auth core + admin, two-factor and phone-number
-// plugin fields. Extra DB guards (CHECKs, partial tally index, append-only
-// VoteEvent trigger) live in the init migration SQL.
+// Feta Awards: recognition of Ethiopian artists by genre, per yearly edition
+// (no public voting, A-76). Better Auth core + admin and two-factor plugin
+// fields; only staff accounts exist (A-77). Extra DB CHECKs live in migration SQL.
 
 generator client {
   provider = "prisma-client"
@@ -14,7 +14,6 @@ datasource db {
 enum Role {
   SUPER_ADMIN
   EDITOR
-  MEMBER
 }
 
 enum Status {
@@ -31,33 +30,6 @@ enum ArtistCategory {
   DANCER
   PRODUCER_DJ
   HOST_MEDIA
-  OTHER
-}
-
-enum EditionPhase {
-  DRAFT
-  NOMINEES_ANNOUNCED
-  VOTING_OPEN
-  VOTING_CLOSED
-  WINNERS_ANNOUNCED
-}
-
-enum VotingType {
-  PUBLIC_VOTE
-  JURY
-  HYBRID
-  HONORARY
-}
-
-enum NomineeType {
-  PERSON
-  GROUP
-  SONG
-  ALBUM
-  MUSIC_VIDEO
-  FILM
-  SERIES
-  CREATOR
   OTHER
 }
 
@@ -81,51 +53,34 @@ enum MediaType {
   VIDEO
 }
 
-enum VoteEventType {
-  CAST
-  CHANGED
-  VOIDED
-  RESTORED
-}
-
 // ───────────────────────── Better Auth ─────────────────────────
 
 model User {
-  id                  String    @id @default(cuid())
-  name                String
-  displayName         String?
-  email               String    @unique
-  emailNormalized     String?   @unique // set by the create hook (A-9)
-  emailVerified       Boolean   @default(false)
-  image               String?
-  role                Role      @default(MEMBER)
-  phoneNumber         String?   @unique
-  phoneNumberVerified Boolean?  @default(false)
-  twoFactorEnabled    Boolean?  @default(false)
-  banned              Boolean?  @default(false)
-  banReason           String?
-  banExpires          DateTime?
-  newsOptIn           Boolean   @default(false)
-  consentAt           DateTime?
-  isActive            Boolean   @default(true)
-  lastLoginAt         DateTime?
-  mustChangePassword  Boolean   @default(false)
-  isSample            Boolean   @default(false)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  name               String
+  displayName        String?
+  email              String    @unique
+  emailNormalized    String?   @unique // set by the create hook (A-9)
+  emailVerified      Boolean   @default(false)
+  image              String?
+  role               Role      @default(EDITOR)
+  twoFactorEnabled   Boolean?  @default(false)
+  banned             Boolean?  @default(false)
+  banReason          String?
+  banExpires         DateTime?
+  isActive           Boolean   @default(true)
+  lastLoginAt        DateTime?
+  mustChangePassword Boolean   @default(false)
+  isSample           Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  sessions        Session[]
-  accounts        Account[]
-  twoFactors      TwoFactor[]
-  votes           Vote[]           @relation("VoteUser")
-  voidedVotes     Vote[]           @relation("VoteVoidedBy")
-  voteEvents      VoteEvent[]      @relation("VoteEventUser")
-  actedVoteEvents VoteEvent[]      @relation("VoteEventActor")
-  media           Media[]          @relation("MediaUploader")
-  newsPosts       NewsPost[]
-  snapshots       ResultSnapshot[]
-  overrides       WinnerOverride[]
-  activity        ActivityLog[]
+  sessions   Session[]
+  accounts   Account[]
+  twoFactors TwoFactor[]
+  media      Media[]       @relation("MediaUploader")
+  newsPosts  NewsPost[]
+  activity   ActivityLog[]
 
   @@index([createdAt])
   @@index([role])
@@ -271,12 +226,14 @@ model Artist {
   sortOrder      Int              @default(0)
   seoTitle       String?
   seoDescription String?
+  /// Fictional sample artist (dev seed only); removed by "Remove sample data".
+  isSample       Boolean          @default(false)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
-  gallery  ArtistMedia[]
-  nominees NomineeArtist[]
-  videos   VideoArtist[]
+  gallery ArtistMedia[]
+  honors  Nominee[]
+  videos  VideoArtist[]
 
   @@index([status, featured])
   @@index([isLegend])
@@ -295,35 +252,26 @@ model ArtistMedia {
 // ───────────────────────── Awards ─────────────────────────
 
 model AwardEdition {
-  id                    String       @id @default(cuid())
-  year                  Int          @unique
-  slug                  String       @unique
-  nameEn                String
-  nameAm                String?
-  phase                 EditionPhase @default(DRAFT)
-  nomineesAnnouncedAt   DateTime?
-  votingOpensAt         DateTime?
-  votingClosesAt        DateTime?
-  ceremonyAt            DateTime?
-  venue                 String?
-  broadcastPartner      String?
-  heroMediaId           String?
-  heroMedia             Media?       @relation(fields: [heroMediaId], references: [id], onDelete: SetNull)
-  showPublicPercentages Boolean      @default(false)
-  status                Status       @default(DRAFT)
-  isSample              Boolean      @default(false)
-  createdAt             DateTime     @default(now())
-  updatedAt             DateTime     @updatedAt
+  id               String    @id @default(cuid())
+  year             Int       @unique
+  slug             String    @unique
+  nameEn           String
+  nameAm           String?
+  ceremonyAt       DateTime?
+  venue            String?
+  broadcastPartner String?
+  heroMediaId      String?
+  heroMedia        Media?    @relation(fields: [heroMediaId], references: [id], onDelete: SetNull)
+  status           Status    @default(DRAFT)
+  isSample         Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   categories AwardCategory[]
-  votes      Vote[]
-  voteEvents VoteEvent[]
-  snapshots  ResultSnapshot[]
   videos     Video[]
   albums     Album[]
   news       NewsPost[]
 
-  @@index([phase])
   @@index([status])
 }
 
@@ -337,20 +285,13 @@ model AwardCategory {
   descriptionEn String?
   descriptionAm String?
   icon          String       @default("trophy")
-  votingType    VotingType
-  publicWeight  Int          @default(50)
-  juryWeight    Int          @default(50)
-  nomineeType   NomineeType
   sortOrder     Int          @default(0)
   status        Status       @default(DRAFT)
   isSample      Boolean      @default(false)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
-  nominees   Nominee[]
-  votes      Vote[]
-  voteEvents VoteEvent[]
-  overrides  WinnerOverride[]
+  nominees Nominee[]
 
   @@unique([editionId, slug])
   @@index([editionId, status, sortOrder])
@@ -360,6 +301,9 @@ model Nominee {
   id            String        @id @default(cuid())
   categoryId    String
   category      AwardCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  /// The recognized artist (an artist can be honored in several genres, once per genre).
+  artistId      String
+  artist        Artist        @relation(fields: [artistId], references: [id], onDelete: Cascade)
   slug          String        @unique
   displayNameEn String
   displayNameAm String?
@@ -370,114 +314,17 @@ model Nominee {
   blurbEn       String?
   blurbAm       String?
   youtubeUrl    String?
-  juryScore     Int?
-  isWinner      Boolean       @default(false)
   sortOrder     Int           @default(0)
   status        Status        @default(DRAFT)
   isSample      Boolean       @default(false)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  artists   NomineeArtist[]
-  videos    VideoNominee[]
-  votes     Vote[]
-  overrides WinnerOverride[]
+  videos VideoNominee[]
 
+  @@unique([categoryId, artistId])
   @@index([categoryId, status, sortOrder])
-}
-
-model NomineeArtist {
-  nomineeId String
-  artistId  String
-  nominee   Nominee @relation(fields: [nomineeId], references: [id], onDelete: Cascade)
-  artist    Artist  @relation(fields: [artistId], references: [id], onDelete: Cascade)
-
-  @@id([nomineeId, artistId])
   @@index([artistId])
-}
-
-/// One vote per member per category (unique userId + categoryId). Tallies use
-/// the partial index on (categoryId, nomineeId) WHERE voidedAt IS NULL.
-model Vote {
-  id         String        @id @default(cuid())
-  userId     String? // null only after account deletion once results are locked (A-15)
-  user       User?         @relation("VoteUser", fields: [userId], references: [id], onDelete: SetNull)
-  editionId  String
-  edition    AwardEdition  @relation(fields: [editionId], references: [id], onDelete: Cascade)
-  categoryId String
-  category   AwardCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  nomineeId  String
-  nominee    Nominee       @relation(fields: [nomineeId], references: [id], onDelete: Cascade)
-  ipHash     String
-  uaHash     String
-  voidedAt   DateTime?
-  voidReason String?
-  voidedById String?
-  voidedBy   User?         @relation("VoteVoidedBy", fields: [voidedById], references: [id], onDelete: SetNull)
-  isSample   Boolean       @default(false)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-
-  @@unique([userId, categoryId])
-  @@index([createdAt])
-  @@index([editionId, createdAt])
-  @@index([ipHash])
-}
-
-/// Append-only audit trail (DB trigger blocks updates/deletes, A-12).
-model VoteEvent {
-  id            String        @id @default(cuid())
-  userId        String?
-  user          User?         @relation("VoteEventUser", fields: [userId], references: [id], onDelete: SetNull)
-  editionId     String
-  edition       AwardEdition  @relation(fields: [editionId], references: [id], onDelete: Cascade)
-  categoryId    String
-  category      AwardCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  fromNomineeId String?
-  toNomineeId   String?
-  type          VoteEventType
-  ipHash        String
-  uaHash        String
-  actorId       String?
-  actor         User?         @relation("VoteEventActor", fields: [actorId], references: [id], onDelete: SetNull)
-  reason        String?
-  isSample      Boolean       @default(false)
-  createdAt     DateTime      @default(now())
-
-  @@index([ipHash, createdAt])
-  @@index([userId, createdAt])
-  @@index([editionId, createdAt])
-}
-
-model ResultSnapshot {
-  id          String       @id @default(cuid())
-  editionId   String
-  edition     AwardEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
-  lockedAt    DateTime     @default(now())
-  lockedById  String?
-  lockedBy    User?        @relation(fields: [lockedById], references: [id], onDelete: SetNull)
-  payload     Json
-  sha256      String
-  publishedAt DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-
-  @@index([editionId, lockedAt])
-}
-
-model WinnerOverride {
-  id         String        @id @default(cuid())
-  categoryId String
-  category   AwardCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  nomineeId  String
-  nominee    Nominee       @relation(fields: [nomineeId], references: [id], onDelete: Cascade)
-  reason     String
-  byId       String?
-  by         User?         @relation(fields: [byId], references: [id], onDelete: SetNull)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-
-  @@index([categoryId, createdAt])
 }
 
 // ───────────────────────── Content ─────────────────────────
@@ -603,7 +450,6 @@ model SiteSettings {
   seo              Json
   footer           Json
   pages            Json
-  voting           Json
   updatedAt        DateTime @updatedAt
 }
 

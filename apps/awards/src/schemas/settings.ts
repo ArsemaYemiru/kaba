@@ -15,9 +15,10 @@ export const HeroSchema = z.object({
   posterId: id.nullish(),
 });
 
-/** Custom items; phase/date items are generated from the current edition. */
+/** Custom items; edition date items are generated from the current edition. */
 export const TickerSchema = z.array(z.string().min(1).max(120)).max(20);
 
+/** `nomineeIds` holds featured honoree entry ids (key kept for stored data). */
 export const FeaturedSchema = z.object({
   nomineeIds: z.array(id).max(24),
   artistIds: z.array(id).max(24),
@@ -56,14 +57,11 @@ export const FaqItemSchema = z.object({
 
 export const PagesSchema = z.object({
   about: PageSchema,
-  rules: PageSchema,
   privacy: PageSchema,
   terms: PageSchema,
   faq: z.array(FaqItemSchema).max(30),
   organizer: z.string().max(200).optional(),
 });
-
-export const VotingSettingsSchema = z.object({ requirePhoneVerificationToVote: z.boolean().default(false) });
 
 export const SiteSettingsSchema = z.object({
   branding: BrandingSchema,
@@ -77,7 +75,6 @@ export const SiteSettingsSchema = z.object({
   seo: SeoSchema,
   footer: FooterSchema,
   pages: PagesSchema,
-  voting: VotingSettingsSchema,
 });
 
 export type SiteSettingsData = z.infer<typeof SiteSettingsSchema>;

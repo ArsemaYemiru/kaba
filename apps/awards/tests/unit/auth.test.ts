@@ -1,61 +1,36 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { normalizeEthiopianPhone } from "@/lib/phone";
-import { safeNext, SignUpSchema } from "@/schemas/auth";
-import { voteEligibility } from "@/server/voting/eligibility";
+import { safeNext, SignInSchema } from "@/schemas/auth";
+import { ROLES } from "@/lib/auth-permissions";
 
-const user = { emailVerified: true, phoneNumberVerified: false, isActive: true, banned: false };
-
-describe("vote eligibility (spec §5.2)", () => {
-  it("requires a signed-in, active, unbanned, verified member", () => {
-    expect(voteEligibility({ user: null, requirePhoneVerification: false })).toEqual({ ok: false, reason: "SIGNED_OUT" });
-    expect(voteEligibility({ user: { ...user, emailVerified: false }, requirePhoneVerification: false })).toEqual({ ok: false, reason: "UNVERIFIED_EMAIL" });
-    expect(voteEligibility({ user: { ...user, isActive: false }, requirePhoneVerification: false })).toEqual({ ok: false, reason: "INACTIVE" });
-    expect(voteEligibility({ user: { ...user, banned: true }, requirePhoneVerification: false })).toEqual({ ok: false, reason: "BANNED" });
-    expect(voteEligibility({ user, requirePhoneVerification: false })).toEqual({ ok: true });
+describe("staff-only accounts (A-77)", () => {
+  it("has no MEMBER role", () => {
+    expect(Object.keys(ROLES).sort()).toEqual(["EDITOR", "SUPER_ADMIN"]);
   });
-  it("expired bans no longer block; phone is required only when the setting is on", () => {
-    const now = new Date("2027-01-01T00:00:00Z");
-    expect(voteEligibility({ user: { ...user, banned: true, banExpires: new Date("2026-12-31T00:00:00Z") }, requirePhoneVerification: false, now })).toEqual({ ok: true });
-    expect(voteEligibility({ user, requirePhoneVerification: true })).toEqual({ ok: false, reason: "UNVERIFIED_PHONE" });
-    expect(voteEligibility({ user: { ...user, phoneNumberVerified: true }, requirePhoneVerification: true })).toEqual({ ok: true });
+  it("sign-in lowercases the email and ignores unknown fields", () => {
+    const ok = SignInSchema.parse({ email: " Staff@Example.org ", password: "x", role: "SUPER_ADMIN" });
+    expect(ok.email).toBe("staff@example.org");
+    expect(ok).not.toHaveProperty("role");
   });
-});
-
-describe("sign-up schema (spec §5.1)", () => {
-  const base = { displayName: "Fan", email: " Fan@Example.org ", password: "0123456789", consent: "on", newsOptIn: null };
-  it("requires consent and a 10+ character password; lowercases email", () => {
-    expect(SignUpSchema.safeParse({ ...base, consent: null }).success).toBe(false);
-    expect(SignUpSchema.safeParse({ ...base, password: "short" }).success).toBe(false);
-    const ok = SignUpSchema.parse(base);
-    expect(ok.email).toBe("fan@example.org");
-    expect(ok.newsOptIn).toBe(false);
-  });
-  it("ignores fields it doesn't know (a posted role never reaches Better Auth)", () => {
-    expect(SignUpSchema.parse({ ...base, role: "SUPER_ADMIN" })).not.toHaveProperty("role");
+  it("Better Auth turns public sign-up off", () => {
+    const src = readFileSync(path.resolve(__dirname, "../../src/lib/auth.ts"), "utf8");
+    expect(src).toMatch(/disableSignUp: true,\n\s+revokeSessionsOnPasswordReset/);
+    expect(src).not.toMatch(/socialProviders|phoneNumber\(|captcha\(/);
   });
 });
 
 describe("safeNext (no open redirects)", () => {
   it.each([
-    ["/vote#best-male-artist", "/vote#best-male-artist"],
-    ["/account", "/account"],
+    ["/admin/honorees", "/admin/honorees"],
+    ["/awards/2026#classical", "/awards/2026#classical"],
     ["https://evil.example", "/"],
     ["//evil.example", "/"],
     ["/\\\\evil.example", "/"],
     ["/sign-in", "/"],
-    ["/en/verify?next=/x", "/"],
+    ["/en/two-factor?next=/x", "/"],
     [undefined, "/"],
   ])("%s → %s", (input, expected) => expect(safeNext(input)).toBe(expected));
-});
-
-describe("Ethiopian phone numbers", () => {
-  it("normalizes to E.164", () => {
-    expect(normalizeEthiopianPhone("0911 234 567")).toBe("+251911234567");
-    expect(normalizeEthiopianPhone("+251 7 1234 5678")).toBe("+251712345678");
-    expect(normalizeEthiopianPhone("12345")).toBeNull();
-  });
 });
 
 describe("every admin Server Action starts with a staff check (A-47)", () => {

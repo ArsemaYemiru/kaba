@@ -7,7 +7,7 @@ test("home renders the hero without console errors", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Feta Awards");
   const hero = page.locator("section[aria-labelledby=hero-title]");
-  await expect(hero.getByText("Celebrating Ethiopia's brightest stars. Your vote decides.")).toBeVisible();
+  await expect(hero.getByText("Celebrating Ethiopian artists, genre by genre.")).toBeVisible();
   await expect(hero.getByText("የኢትዮጵያን ብሩህ ኮከቦች እናክብር።")).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -26,13 +26,14 @@ test("unknown routes show the branded 404", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Off the red carpet" })).toBeVisible();
 });
 
-test("mobile menu opens with Sign in and closes on Escape", async ({ page }) => {
+test("mobile menu opens with the main sections (no sign-in) and closes on Escape", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoReady(page, "/");
   await page.getByRole("button", { name: "Open menu" }).click();
   const dialog = page.getByRole("dialog", { name: "Menu" });
   await expect(dialog.getByRole("link", { name: "Awards", exact: true })).toBeVisible();
-  await expect(dialog.getByRole("link", { name: "Sign in" })).toBeVisible();
+  await expect(dialog.getByRole("link", { name: "Artists", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("link", { name: "Sign in" })).toHaveCount(0);
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
 });

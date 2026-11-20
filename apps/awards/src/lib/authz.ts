@@ -16,14 +16,11 @@ export type Viewer = {
   name: string;
   email: string;
   emailVerified: boolean;
-  phoneNumber: string | null;
-  phoneNumberVerified: boolean;
   role: AppRole;
   isStaff: boolean;
   banned: boolean;
   mustChangePassword: boolean;
   twoFactorEnabled: boolean;
-  newsOptIn: boolean;
 };
 
 export const getViewer = cache(async (): Promise<Viewer | null> => {
@@ -37,15 +34,12 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
       displayName: true,
       email: true,
       emailVerified: true,
-      phoneNumber: true,
-      phoneNumberVerified: true,
       role: true,
       banned: true,
       banExpires: true,
       isActive: true,
       mustChangePassword: true,
       twoFactorEnabled: true,
-      newsOptIn: true,
     },
   });
   if (!u || !u.isActive) return null;
@@ -56,23 +50,13 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
     name: u.displayName || u.name,
     email: u.email,
     emailVerified: u.emailVerified,
-    phoneNumber: u.phoneNumber,
-    phoneNumberVerified: !!u.phoneNumberVerified,
     role: u.role,
     isStaff: (STAFF_ROLES as readonly string[]).includes(u.role),
     banned,
     mustChangePassword: u.mustChangePassword,
     twoFactorEnabled: !!u.twoFactorEnabled,
-    newsOptIn: u.newsOptIn,
   };
 });
-
-/** Member pages: signed-out visitors go to sign-in and come back. */
-export async function requireViewer(next: string): Promise<Viewer> {
-  const v = await getViewer();
-  if (!v) redirect(`/sign-in?next=${encodeURIComponent(next)}`);
-  return v;
-}
 
 /** Admin pages: signed out → sign-in; not staff → 403; forced password change → change it first. */
 export async function requireStaff(opts: { allowMustChange?: boolean; role?: AppRole } = {}): Promise<Viewer> {
@@ -86,7 +70,7 @@ export async function requireStaff(opts: { allowMustChange?: boolean; role?: App
 export type Denied = { ok: false; status: 401 | 403; error: "unauthorized" | "forbidden" | "passwordChangeRequired" };
 
 /**
- * Admin Server Actions: a member (or anyone) gets a real 403 via `forbidden()`;
+ * Admin Server Actions: anyone who isn't active staff gets a real 403 via `forbidden()`;
  * signed-out callers get 401-style denials. Every admin action starts here.
  */
 export async function authorizeStaff(role?: AppRole): Promise<Viewer> {

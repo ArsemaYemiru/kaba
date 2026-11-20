@@ -14,17 +14,6 @@ next-env.d.ts
 .env*.local
 !.env.example
 
-# prisma generated client
-apps/web/src/generated
-
-# local media storage
-apps/web/storage
-
-# tests
-apps/web/test-results
-apps/web/playwright-report
-apps/web/blob-report
-
 # misc
 .DS_Store
 *.log
@@ -41,6 +30,3 @@ apps/awards/test-results
 apps/awards/playwright-report
 apps/awards/blob-report
 
-# k6 fixtures/results (Feta Awards)
-apps/awards/load/.fixtures.json
-apps/awards/load/.summary.json

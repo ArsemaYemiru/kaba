@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * prisma/seed.ts and load/setup.ts run under tsx (outside Next), so nothing they
+ * prisma/seed.ts and scripts/verify-remove-sample.ts run under tsx (outside Next), so nothing they
  * import may pull in "server-only" (it throws there). Walks the relative/@ imports.
  */
 const root = path.resolve(__dirname, "../..");
@@ -32,7 +32,7 @@ function walk(entry: string, seen = new Set<string>()): Set<string> {
 }
 
 describe("tsx entry points never import server-only", () => {
-  for (const entry of ["prisma/seed.ts", "load/setup.ts", "load/verify.ts"]) {
+  for (const entry of ["prisma/seed.ts", "scripts/verify-remove-sample.ts"]) {
     it(entry, () => {
       const offenders = [...walk(path.join(root, entry))].filter((f) => /^\s*import\s+["']server-only["']/m.test(readFileSync(f, "utf8")));
       expect(offenders.map((f) => path.relative(root, f))).toEqual([]);

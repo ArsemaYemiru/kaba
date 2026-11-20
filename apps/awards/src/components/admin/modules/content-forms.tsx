@@ -60,7 +60,7 @@ export function VideoForm({ id, initial, media, editions, artists, nominees }: {
         </Section>
         <Section title="Links">
           <SelectField name="editionId" label="Edition" empty="— none —" options={editions.map((e) => ({ value: e.id, label: e.label }))} wide />
-          <ChipsField name="nomineeIds" label="Nominees in this video" searchable options={nominees.map((n) => ({ value: n.id, label: n.label + (n.status !== "PUBLISHED" ? " (draft)" : ""), muted: n.status !== "PUBLISHED" }))} />
+          <ChipsField name="nomineeIds" label="Honorees in this video" searchable options={nominees.map((n) => ({ value: n.id, label: n.label + (n.status !== "PUBLISHED" ? " (draft)" : ""), muted: n.status !== "PUBLISHED" }))} />
           <ChipsField name="artistIds" label="Artists in this video" searchable options={artists.map((a) => ({ value: a.id, label: a.nameEn + (a.status !== "PUBLISHED" ? " (draft)" : ""), muted: a.status !== "PUBLISHED" }))} />
         </Section>
       </EditorShell>

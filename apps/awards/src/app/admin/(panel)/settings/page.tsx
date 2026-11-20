@@ -3,7 +3,7 @@ import { SettingsEditor } from "@/components/admin/modules/settings-editor";
 import { AdminPage, ForbiddenPanel } from "@/components/admin/ui";
 import { isSuperAdmin, requireUser } from "@/lib/authz";
 import type { SiteSettingsData } from "@/schemas/settings";
-import { artistOptions, editionOptions, mediaByIds, nomineeOptions } from "@/server/admin/loaders";
+import { artistOptions, editionOptions, honoreeOptions, mediaByIds } from "@/server/admin/loaders";
 import { getSettings } from "@/server/queries/settings";
 import { Suspense } from "react";
 import Loading from "@/app/admin/(panel)/loading";
@@ -31,10 +31,10 @@ async function SettingsPageContent() {
     data.seo.ogImageId,
     ...data.sponsors.map((s) => s.logoId),
   ];
-  const [media, editions, nominees, artists] = await Promise.all([mediaByIds(ids), editionOptions(), nomineeOptions(), artistOptions()]);
+  const [media, editions, honorees, artists] = await Promise.all([mediaByIds(ids), editionOptions(), honoreeOptions(), artistOptions()]);
   return (
     <AdminPage title="Site Settings" description="Super admins only. Each section saves separately and updates the public site immediately.">
-      <SettingsEditor settings={data} media={media} editions={editions} nominees={nominees} artists={artists.map((a) => ({ id: a.id, label: a.nameEn, status: a.status }))} />
+      <SettingsEditor settings={data} media={media} editions={editions} honorees={honorees} artists={artists.map((a) => ({ id: a.id, label: a.nameEn, status: a.status }))} />
     </AdminPage>
   );
 }

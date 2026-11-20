@@ -27,7 +27,7 @@ export default async function NewsPostPage({ params }: PageProps<"/[locale]/news
   setRequestLocale(locale);
   const post = await getNewsPost(slug);
   if (!post) notFound();
-  const [t, tc, tn, format] = await Promise.all([getTranslations("news"), getTranslations("common"), getTranslations("nominee"), getFormatter()]);
+  const [t, tc, tn, format] = await Promise.all([getTranslations("news"), getTranslations("common"), getTranslations("honoree"), getFormatter()]);
   const url = `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001"}/news/${slug}`;
 
   return (
