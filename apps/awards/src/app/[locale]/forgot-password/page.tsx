@@ -5,7 +5,6 @@ import { AuthCard } from "@/components/auth/auth-card";
 import { ForgotForm } from "@/components/auth/forms";
 import { NO_INDEX } from "@/components/auth/page-helpers";
 import { Link } from "@/i18n/navigation";
-import { turnstileSiteKey } from "@/lib/turnstile";
 
 export const metadata: Metadata = { title: "Reset your password", ...NO_INDEX };
 
@@ -25,7 +24,7 @@ export default async function ForgotPage({ params }: PageProps<"/[locale]/forgot
         </Link>
       }
     >
-      <ForgotForm siteKey={turnstileSiteKey()} />
+      <ForgotForm />
     </AuthCard>
   );
 }

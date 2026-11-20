@@ -56,7 +56,7 @@ export async function highlightVideos(take = 6) {
 }
 
 /** Videos linked to a nominee (nominee page). */
-export async function nomineeVideos(nomineeId: string) {
+export async function honoreeVideos(nomineeId: string) {
   "use cache";
   cacheTag(TAGS.videos, TAGS.media);
   cacheLife("days");

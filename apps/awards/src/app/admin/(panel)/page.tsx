@@ -1,24 +1,19 @@
-import { CheckCircle2, CircleAlert, ImagePlus, Images, Newspaper, PlaySquare, Plus, Trophy, UserRound, Users, Vote } from "lucide-react";
+import { Award, CheckCircle2, CircleAlert, ImagePlus, Images, LayoutGrid, Newspaper, PlaySquare, Plus, Trophy, UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ActivityRow } from "@/components/admin/activity-row";
 import { RefreshButton } from "@/components/admin/forms";
-import { PHASE_LABEL as PHASE_LABELS } from "@/server/admin/phase";
 import { BarsChart } from "@/components/admin/modules/monitor-charts";
 import { AdminPage, Panel } from "@/components/admin/ui";
-import { RelativeTime } from "@/components/awards/relative-time";
 import { Button } from "@/components/ui/button";
 import { isSuperAdmin, requireUser } from "@/lib/authz";
-import { upcomingMilestone } from "@/lib/phase";
 import { formatEat } from "@/lib/time";
 import { cn } from "@/lib/utils";
-import { dashboardEdition, getKpis, launchChecklist, participation, recentActivity, votesPerDay } from "@/server/admin/dashboard";
+import { dashboardEdition, getKpis, honoreesPerGenre, launchChecklist, recentActivity } from "@/server/admin/dashboard";
 import { Suspense } from "react";
 import Loading from "@/app/admin/(panel)/loading";
 
 export const metadata: Metadata = { title: "Dashboard" };
-
-const MILESTONE = { votingOpens: "Voting opens", votingCloses: "Voting closes", ceremony: "Awards night" } as const;
 
 /** Request-time admin data streams inside its own boundary (A-44). */
 export default function Dashboard() {
@@ -32,21 +27,14 @@ export default function Dashboard() {
 async function DashboardContent() {
   const user = await requireUser();
   const edition = await dashboardEdition();
-  const [kpis, activity, checklist, perDay, perCategory] = await Promise.all([
-    getKpis(edition?.id ?? null),
-    recentActivity(10),
-    launchChecklist(),
-    edition ? votesPerDay(edition.id) : [],
-    edition ? participation(edition.id) : [],
-  ]);
+  const [kpis, activity, checklist, perGenre] = await Promise.all([getKpis(edition?.id ?? null), recentActivity(10), launchChecklist(), edition ? honoreesPerGenre(edition.id) : []]);
   const visible = checklist.filter((c) => !c.superAdminOnly || isSuperAdmin(user));
   const done = visible.filter((c) => c.ok).length;
-  const next = edition ? upcomingMilestone(edition) : null;
   const n = (v: number) => v.toLocaleString("en");
 
   const cards = [
-    { label: "Verified / total members", value: `${n(kpis.verified)} / ${n(kpis.members)}`, href: "/admin/members", icon: Users },
-    { label: "Votes counting", value: n(kpis.votes), sub: `${n(kpis.votes24h)} new in 24 h`, href: "/admin/results", icon: Vote },
+    { label: "Genre categories", value: n(kpis.genres), href: edition ? `/admin/categories?edition=${edition.id}` : "/admin/categories", icon: LayoutGrid },
+    { label: "Honorees", value: n(kpis.honorees), sub: kpis.missingCitation ? `${n(kpis.missingCitation)} without a citation` : undefined, href: edition ? `/admin/honorees?edition=${edition.id}` : "/admin/honorees", icon: Award },
     { label: "Published artists", value: n(kpis.artists), href: "/admin/artists", icon: UserRound },
     { label: "Published news", value: n(kpis.news), href: "/admin/news", icon: Newspaper },
     { label: "Published videos", value: n(kpis.videos), href: "/admin/videos", icon: PlaySquare },
@@ -60,8 +48,8 @@ async function DashboardContent() {
       actions={
         <>
           <Button asChild size="sm">
-            <Link href="/admin/nominees/new">
-              <Plus /> New nominee
+            <Link href="/admin/honorees/new">
+              <Plus /> Honor an artist
             </Link>
           </Button>
           <Button asChild size="sm" variant="outline">
@@ -86,17 +74,14 @@ async function DashboardContent() {
             <div>
               <p className="text-xs text-muted-foreground">Current edition</p>
               <Link href={`/admin/editions/${edition.id}`} className="font-display text-lg font-bold hover:text-gold">
-                {edition.nameEn} · {PHASE_LABELS[edition.phase]}
+                {edition.nameEn} · {edition.status === "PUBLISHED" ? "Announced" : "Draft"}
               </Link>
             </div>
           </div>
-          {next ? (
+          {edition.ceremonyAt ? (
             <p className="text-sm">
-              <span className="text-muted-foreground">{MILESTONE[next.key]}: </span>
-              <strong>{formatEat(next.target, "en-GB", { dateStyle: "medium", timeStyle: "short" })} EAT</strong>{" "}
-              <span className="text-gold">
-                (<RelativeTime target={next.target.toISOString()} template="in {time}" />)
-              </span>
+              <span className="text-muted-foreground">Awards night: </span>
+              <strong>{formatEat(edition.ceremonyAt, "en-GB", { dateStyle: "medium", timeStyle: "short" })} EAT</strong>
             </p>
           ) : null}
         </section>
@@ -116,12 +101,15 @@ async function DashboardContent() {
       </ul>
 
       {edition ? (
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          <Panel title="Votes over time (last 21 days)">
-            <BarsChart data={perDay.map((d) => ({ label: d.day.toISOString().slice(5, 10), a: d.votes, b: d.changes }))} aLabel="New votes" bLabel="Changes" />
-          </Panel>
-          <Panel title="Participation per category" action={<span className="text-xs text-muted-foreground">staff only</span>}>
-            <BarsChart data={perCategory.map((c) => ({ label: c.name.replace(/ of the Year$/, ""), a: c.votes }))} aLabel="Counting votes" />
+        <div className="mt-6">
+          <Panel title="Honorees per genre">
+            {perGenre.length ? (
+              <BarsChart data={perGenre.map((g) => ({ label: g.name, a: g.published, b: g.total - g.published }))} aLabel="Published" bLabel="In progress" />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No genres yet. <Link href={`/admin/categories/new?edition=${edition.id}`} className="text-gold hover:underline">Add the first genre</Link>.
+              </p>
+            )}
           </Panel>
         </div>
       ) : null}

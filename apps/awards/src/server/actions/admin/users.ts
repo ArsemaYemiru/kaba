@@ -38,7 +38,7 @@ export async function createUser(input: unknown): Promise<ActionResult> {
   if (await prisma.user.findFirst({ where: { OR: [{ email: d.email }, { emailNormalized: normalizeEmail(d.email) }] }, select: { id: true } })) {
     return { ok: false, status: 409, error: "A user with that email already exists.", fieldErrors: { email: "Already in use." } };
   }
-  const user = await prisma.user.create({ data: { name: d.name, displayName: d.name, email: d.email, emailNormalized: normalizeEmail(d.email), role: d.role, emailVerified: true, mustChangePassword: true, isActive: true, consentAt: new Date() } });
+  const user = await prisma.user.create({ data: { name: d.name, displayName: d.name, email: d.email, emailNormalized: normalizeEmail(d.email), role: d.role, emailVerified: true, mustChangePassword: true, isActive: true } });
   await writePassword(user.id, d.password);
   await logActivity({ userId: a.user.id, action: "create", entityType: "User", entityId: user.id, meta: { label: `${d.email} (${d.role})` } });
   revalidatePath("/admin/users");

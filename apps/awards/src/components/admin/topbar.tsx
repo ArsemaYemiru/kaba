@@ -22,9 +22,9 @@ import { adminSearch, type AdminSearchHit } from "@/server/actions/admin/search"
 import { ADMIN_NAV } from "./nav";
 import { NavList } from "./sidebar";
 
-type Props = { name: string; email: string; role: "SUPER_ADMIN" | "EDITOR"; unread: number };
+type Props = { name: string; email: string; role: "SUPER_ADMIN" | "EDITOR" };
 
-export function Topbar({ name, email, role, unread }: Props) {
+export function Topbar({ name, email, role }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const isSuperAdmin = role === "SUPER_ADMIN";
 
@@ -97,7 +97,7 @@ export function Topbar({ name, email, role, unread }: Props) {
             </Button>
           </div>
           <nav aria-label="Admin" className="overflow-y-auto p-2">
-            <NavList isSuperAdmin={isSuperAdmin} unread={unread} onNavigate={() => setMenuOpen(false)} />
+            <NavList isSuperAdmin={isSuperAdmin} onNavigate={() => setMenuOpen(false)} />
           </nav>
         </DialogContent>
       </Dialog>
@@ -153,7 +153,7 @@ function AdminSearch({ isSuperAdmin }: { isSuperAdmin: boolean }) {
           <Command loop label="Search admin" shouldFilter={false}>
             <div className="flex items-center gap-3 border-b border-line px-4">
               <Search className="size-4 text-muted-foreground" aria-hidden="true" />
-              <Command.Input autoFocus value={q} onValueChange={setQ} placeholder="Go to a section, or search nominees, members, artists, news…" className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground focus-visible:outline-none" />
+              <Command.Input autoFocus value={q} onValueChange={setQ} placeholder="Go to a section, or search honorees, artists, news…" className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground focus-visible:outline-none" />
             </div>
             <Command.List className="max-h-80 overflow-y-auto p-2">
               <Command.Empty className="px-3 py-6 text-center text-sm text-muted-foreground">No matches.</Command.Empty>

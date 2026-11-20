@@ -1,3 +1,5 @@
+> **Note (2026-11-19):** voting, members and the Feta Show coexistence described below are superseded. Feta Awards now recognizes artists by genre (A-76), has staff-only accounts (A-77) and is the only app deployed (A-78). See [DECISIONS.md](DECISIONS.md).
+
 # Feta Awards (ፈታ): Phase 0 plan
 
 Status: **GATE 0, awaiting approval.** Decisions referenced as A-n are in [`DECISIONS.md`](DECISIONS.md) (this folder).

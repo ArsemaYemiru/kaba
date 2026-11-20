@@ -102,13 +102,13 @@ export async function editionOptions() {
   const rows = await prisma.awardEdition.findMany({ orderBy: { year: "desc" }, select: { id: true, year: true, nameEn: true, isSample: true } });
   return rows.map((e) => ({ id: e.id, label: `${e.nameEn}${e.isSample ? " (sample)" : ""}` }));
 }
-/** Nominees for pickers: "Name · Category · Year". */
-export async function nomineeOptions() {
+/** Honorees for pickers: "Artist · Genre · Year". */
+export async function honoreeOptions() {
   const rows = await prisma.nominee.findMany({
     orderBy: [{ category: { edition: { year: "desc" } } }, { category: { sortOrder: "asc" } }, { sortOrder: "asc" }],
-    select: { id: true, displayNameEn: true, workTitleEn: true, status: true, category: { select: { nameEn: true, edition: { select: { year: true } } } } },
+    select: { id: true, displayNameEn: true, status: true, category: { select: { nameEn: true, edition: { select: { year: true } } } } },
   });
-  return rows.map((n) => ({ id: n.id, status: n.status, label: `${n.workTitleEn ?? n.displayNameEn} · ${n.category.nameEn} · ${n.category.edition.year}` }));
+  return rows.map((n) => ({ id: n.id, status: n.status, label: `${n.displayNameEn} · ${n.category.nameEn} · ${n.category.edition.year}` }));
 }
 export async function videoOptions() {
   return prisma.video.findMany({ orderBy: { titleEn: "asc" }, select: { id: true, titleEn: true, status: true } });

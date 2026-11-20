@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CategoryForm } from "@/components/admin/modules/awards-forms";
+import { AddArtistsPanel, CategoryForm } from "@/components/admin/modules/awards-forms";
 import { requireUser } from "@/lib/authz";
-import { prisma } from "@/lib/db";
 import { categoryToForm, getCategoryForEdit } from "@/server/admin/awards-loaders";
-import { editionOptions } from "@/server/admin/loaders";
+import { artistOptions, editionOptions } from "@/server/admin/loaders";
 import { Suspense } from "react";
 import Loading from "@/app/admin/(panel)/loading";
 
-export const metadata: Metadata = { title: "Edit category" };
+export const metadata: Metadata = { title: "Edit genre category" };
 
 /** Request-time admin data streams inside its own boundary (A-44). */
 export default function EditCategoryPage(props: PageProps<"/admin/categories/[id]">) {
@@ -24,7 +24,19 @@ async function EditCategoryPageContent({ params }: PageProps<"/admin/categories/
   const { id } = await params;
   const c = await getCategoryForEdit(id);
   if (!c) notFound();
-  const [editions, edition] = await Promise.all([editionOptions(), prisma.awardEdition.findUnique({ where: { id: c.editionId }, select: { slug: true, phase: true, status: true } })]);
-  const live = c.status === "PUBLISHED" && edition?.status === "PUBLISHED" && edition.phase !== "DRAFT" ? `/awards/${edition.slug}/${c.slug}` : null;
-  return <CategoryForm key={c.updatedAt.toISOString()} id={c.id} initial={categoryToForm(c)} editions={editions} liveHref={live} />;
+  const [editions, artists] = await Promise.all([editionOptions(), artistOptions()]);
+  const live = c.status === "PUBLISHED" && c.edition.status === "PUBLISHED" ? `/awards/${c.edition.slug}/${c.slug}` : null;
+  return (
+    <>
+      <CategoryForm key={c.updatedAt.toISOString()} id={c.id} initial={categoryToForm(c)} editions={editions} liveHref={live} />
+      <div className="mx-auto w-full max-w-5xl px-4 pb-10 sm:px-6">
+        <p className="mb-3 text-sm">
+          <Link href={`/admin/honorees?category=${c.id}`} className="text-gold hover:underline">
+            {c._count.nominees} honoree{c._count.nominees === 1 ? "" : "s"} in this genre →
+          </Link>
+        </p>
+        <AddArtistsPanel categoryId={c.id} artists={artists} placed={c.nominees.map((n) => n.artistId)} />
+      </div>
+    </>
+  );
 }

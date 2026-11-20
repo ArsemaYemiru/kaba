@@ -2,16 +2,16 @@ import { cacheLife, cacheTag } from "next/cache";
 import { prisma } from "@/lib/db";
 import { TAGS } from "@/lib/cache-tags";
 
-export type SearchItem = { kind: "nominee" | "artist" | "news"; title: string; subtitle?: string; href: string; keywords: string[] };
+export type SearchItem = { kind: "honoree" | "artist" | "news"; title: string; subtitle?: string; href: string; keywords: string[] };
 
-/** Small index for the command palette (nominees, artists, news). Published content only, no counts. */
+/** Small index for the command palette (honorees, artists, news). Published content only. */
 export async function searchIndex(): Promise<SearchItem[]> {
   "use cache";
   cacheTag(TAGS.editions, TAGS.artists, TAGS.news);
   cacheLife("minutes");
-  const [nominees, artists, news] = await Promise.all([
+  const [honorees, artists, news] = await Promise.all([
     prisma.nominee.findMany({
-      where: { status: "PUBLISHED", category: { status: "PUBLISHED", edition: { status: "PUBLISHED", phase: { not: "DRAFT" } } } },
+      where: { status: "PUBLISHED", artist: { status: "PUBLISHED" }, category: { status: "PUBLISHED", edition: { status: "PUBLISHED" } } },
       select: { slug: true, displayNameEn: true, displayNameAm: true, workTitleEn: true, category: { select: { nameEn: true, edition: { select: { year: true } } } } },
       orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }],
     }),
@@ -27,12 +27,12 @@ export async function searchIndex(): Promise<SearchItem[]> {
     }),
   ]);
   return [
-    ...nominees.map((n) => ({
-      kind: "nominee" as const,
-      title: n.workTitleEn ?? n.displayNameEn,
+    ...honorees.map((n) => ({
+      kind: "honoree" as const,
+      title: n.displayNameEn,
       subtitle: `${n.category.nameEn} · ${n.category.edition.year}`,
-      href: `/nominees/${n.slug}`,
-      keywords: [n.displayNameEn, n.displayNameAm ?? "", n.workTitleEn ? n.displayNameEn : ""].filter(Boolean),
+      href: `/honorees/${n.slug}`,
+      keywords: [n.displayNameAm ?? "", n.workTitleEn ?? "", n.category.nameEn].filter(Boolean),
     })),
     ...artists.map((a) => ({
       kind: "artist" as const,

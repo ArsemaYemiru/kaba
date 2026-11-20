@@ -12,13 +12,11 @@ const INTERNAL = "x-feta-internal-404";
 const SUPER_ADMIN_ONLY = ["/admin/settings", "/admin/users"];
 
 /** Pages that must never be cached or framed (spec §11, A-14). */
-const AUTH_PAGES = new Set(["/sign-in", "/sign-up", "/verify", "/forgot-password", "/reset-password", "/two-factor"]);
-const MEMBER_PAGES = ["/account", "/verify"];
+const AUTH_PAGES = new Set(["/sign-in", "/forgot-password", "/reset-password", "/two-factor"]);
 
 /**
  * Real status codes before streaming (A-39, A-46):
- * - /admin: signed out → 307 to sign-in; member → 403; forced password change → 307.
- * - /account, /verify: signed out → 307 to sign-in.
+ * - /admin: signed out → 307 to sign-in; not staff → 403; forced password change → 307.
  * - unknown or unpublished public routes → 404 (branded page); /awards → 307.
  * Pages, Server Actions and handlers re-check everything (lib/authz).
  */
@@ -40,15 +38,6 @@ export default async function proxy(req: NextRequest) {
   }
   if (path === "/missing") return req.headers.get(INTERNAL) === "1" ? intl(req) : notFound(req);
 
-  if (MEMBER_PAGES.some((p) => path === p || path.startsWith(`${p}/`))) {
-    if (!(await sessionUser(req))) {
-      if (req.method !== "GET") return privateHeaders(await refuse(req, 401, "Unauthorized"));
-      const url = new URL(`${prefixed ? "/en" : ""}/sign-in`, req.url);
-      url.searchParams.set("next", path + req.nextUrl.search);
-      return privateHeaders(NextResponse.redirect(url, 307));
-    }
-    return privateHeaders(intl(req));
-  }
   if (AUTH_PAGES.has(path)) return privateHeaders(intl(req));
 
   const check = await checkPublicRoute(path).catch((err: unknown) => {

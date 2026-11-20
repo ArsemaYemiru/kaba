@@ -7,7 +7,7 @@ import { getStorage } from "@/lib/storage";
 
 /**
  * Social share images (spec §10): 1200×630, Gold Night look, English + Amharic.
- * Never include vote counts (callers only pass names, categories and phases).
+ * Callers pass only names, genres and editions.
  */
 export const OG_SIZE = { width: 1200, height: 630 };
 
@@ -50,13 +50,11 @@ type Card = {
   image?: string | null;
   /** Initials / ፈታ shown when there's no image. */
   fallback?: string;
-  winner?: boolean;
   sample?: boolean;
 };
 
 export async function ogCard(c: Card) {
   const titleSize = c.title.length > 34 ? 52 : c.title.length > 22 ? 64 : 78;
-  const gold = c.winner ? "linear-gradient(110deg, #B37F00 0%, #FFB800 30%, #FFD866 48%, #FFB800 66%, #B37F00 100%)" : "#FFB800";
   return new ImageResponse(
     (
       <div style={{ width: "100%", height: "100%", display: "flex", backgroundColor: "#0A0A0C", backgroundImage: "radial-gradient(ellipse 70% 80% at 20% 15%, rgba(255,184,0,0.28) 0%, rgba(10,10,12,0) 70%)", color: "#F4F4F5", fontFamily: "Inter", position: "relative" }}>
@@ -67,7 +65,7 @@ export async function ogCard(c: Card) {
             {c.sample ? <span style={{ marginLeft: 12, fontSize: 18, padding: "4px 12px", borderRadius: 999, border: "2px dashed #6B6B75", color: "#A1A1AA" }}>Sample</span> : null}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: c.image || c.fallback ? 680 : 1060 }}>
-            <span style={{ fontFamily: "Unbounded", fontSize: 24, letterSpacing: 5, ...(c.winner ? { backgroundImage: gold, backgroundClip: "text", color: "transparent" } : { color: "#FFB800" }) }}>{c.kicker.toUpperCase()}</span>
+            <span style={{ fontFamily: "Unbounded", fontSize: 24, letterSpacing: 5, color: "#FFB800" }}>{c.kicker.toUpperCase()}</span>
             <span style={{ fontFamily: "Unbounded", fontSize: titleSize, lineHeight: 1.05 }}>{c.title}</span>
             {c.titleAm ? <span style={{ fontFamily: "Noto Sans Ethiopic", fontSize: 38, color: "#FFB800" }}>{c.titleAm}</span> : null}
             {c.subtitle ? <span style={{ fontSize: 30, color: "#C9C9D1" }}>{c.subtitle}</span> : null}
@@ -89,7 +87,7 @@ export async function ogCard(c: Card) {
                 justifyContent: "center",
                 borderRadius: 28,
                 overflow: "hidden",
-                border: c.winner ? "6px solid #FFB800" : "2px solid #2A2A32",
+                border: "2px solid #2A2A32",
                 background: "linear-gradient(160deg, #3a2a05 0%, #131317 70%)",
               }}
             >

@@ -1,16 +1,15 @@
 import { prisma } from "@/lib/db";
 
 /** Pages with no CMS lookup. */
-const STATIC = new Set(["/", "/awards/archive", "/vote", "/artists", "/videos", "/gallery", "/news", "/about", "/rules", "/privacy", "/terms"]);
+const STATIC = new Set(["/", "/awards/archive", "/artists", "/videos", "/gallery", "/news", "/about", "/privacy", "/terms"]);
 
 export type RouteCheck = { ok: true } | { ok: false } | { redirect: string };
 
 const published = { status: "PUBLISHED" } as const;
-const announced = { ...published, phase: { not: "DRAFT" as const } };
 
 /**
  * Runs in the proxy before streaming (streamed pages always start with 200),
- * so unknown, draft and unannounced records get real 404s (A-39).
+ * so unknown and draft records get real 404s (A-39).
  * `path` has no locale prefix and no trailing slash.
  */
 export async function checkPublicRoute(path: string): Promise<RouteCheck> {
@@ -32,8 +31,8 @@ export async function checkPublicRoute(path: string): Promise<RouteCheck> {
     switch (section) {
       case "awards":
         return found(await prisma.awardEdition.findFirst({ where: { slug, ...published }, select }));
-      case "nominees":
-        return found(await prisma.nominee.findFirst({ where: { slug, ...published, category: { ...published, edition: announced } }, select }));
+      case "honorees":
+        return found(await prisma.nominee.findFirst({ where: { slug, ...published, artist: published, category: { ...published, edition: published } }, select }));
       case "artists":
         return found(await prisma.artist.findFirst({ where: { slug, ...published }, select }));
       case "gallery":
@@ -44,8 +43,7 @@ export async function checkPublicRoute(path: string): Promise<RouteCheck> {
   }
   if (seg.length === 3 && seg[0] === "awards") {
     const [, year, rest] = seg as [string, string, string];
-    if (rest === "winners") return found(await prisma.awardEdition.findFirst({ where: { slug: year, ...published }, select }));
-    return found(await prisma.awardCategory.findFirst({ where: { slug: rest, ...published, edition: { slug: year, ...announced } }, select }));
+    return found(await prisma.awardCategory.findFirst({ where: { slug: rest, ...published, edition: { slug: year, ...published } }, select }));
   }
   return { ok: false };
 }

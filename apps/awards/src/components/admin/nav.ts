@@ -1,6 +1,5 @@
 import {
   Activity,
-  BarChart3,
   CalendarRange,
   Image as ImageIcon,
   Images,
@@ -9,25 +8,20 @@ import {
   type LucideIcon,
   Newspaper,
   PlaySquare,
-  Radar,
   Settings,
   ShieldCheck,
   Trophy,
   UserRound,
-  Users,
 } from "lucide-react";
 
-export type AdminNavItem = { href: string; label: string; icon: LucideIcon; superAdminOnly?: boolean; badge?: "monitor"; section?: string };
+export type AdminNavItem = { href: string; label: string; icon: LucideIcon; superAdminOnly?: boolean; section?: string };
 
-/** Sidebar order from spec §6. */
+/** Sidebar order (recognition model, A-76). */
 export const ADMIN_NAV: AdminNavItem[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/editions", label: "Editions", icon: CalendarRange, section: "Awards" },
-  { href: "/admin/categories", label: "Categories", icon: LayoutGrid },
-  { href: "/admin/nominees", label: "Nominees", icon: Trophy },
-  { href: "/admin/results", label: "Results", icon: BarChart3 },
-  { href: "/admin/members", label: "Members", icon: Users, section: "Voting" },
-  { href: "/admin/monitor", label: "Vote monitor", icon: Radar, badge: "monitor" },
+  { href: "/admin/categories", label: "Genre categories", icon: LayoutGrid },
+  { href: "/admin/honorees", label: "Honorees", icon: Trophy },
   { href: "/admin/artists", label: "Artists", icon: UserRound, section: "Content" },
   { href: "/admin/videos", label: "Videos", icon: PlaySquare },
   { href: "/admin/media", label: "Media Library", icon: ImageIcon },

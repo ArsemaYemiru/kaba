@@ -12,11 +12,10 @@ export type ArtistCardProps = {
   imageAlt?: string | null;
   blurDataUrl?: string | null;
   isLegend?: boolean;
-  nominee?: boolean;
-  winner?: boolean;
+  /** Recognized in a Feta Awards edition (A-76). */
+  honored?: boolean;
   legendLabel?: string;
-  nomineeLabel?: string;
-  winnerLabel?: string;
+  honoredLabel?: string;
   href?: string;
   className?: string;
   sizes?: string;
@@ -25,7 +24,7 @@ export type ArtistCardProps = {
 /**
  * Artist Card (spec §3.4): 3:4 portrait, grayscale → colour on hover,
  * English name (Unbounded) over Amharic name (Noto Sans Ethiopic),
- * category chips, Legend / Feta Awards nominee / Winner badges, branded fallback.
+ * category chips, Legend / Feta Awards honoree badges, branded fallback.
  */
 export function ArtistCard({
   nameEn,
@@ -35,11 +34,9 @@ export function ArtistCard({
   imageAlt,
   blurDataUrl,
   isLegend,
-  nominee,
-  winner,
+  honored,
   legendLabel = "Legend",
-  nomineeLabel = "Feta Awards nominee",
-  winnerLabel = "Winner",
+  honoredLabel = "Feta Awards honoree",
   href,
   className,
   sizes = "(min-width: 1280px) 20vw, (min-width: 768px) 30vw, 50vw",
@@ -62,10 +59,10 @@ export function ArtistCard({
         )}
       </div>
 
-      {isLegend || nominee || winner ? (
+      {isLegend || honored ? (
         <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5">
           {isLegend ? <Chip variant="legend" size="sm">{legendLabel}</Chip> : null}
-          {winner ? <Chip variant="foil" size="sm">{winnerLabel}</Chip> : nominee ? <Chip variant="red" size="sm">{nomineeLabel}</Chip> : null}
+          {honored ? <Chip variant="gold" size="sm">{honoredLabel}</Chip> : null}
         </div>
       ) : null}
 

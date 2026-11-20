@@ -25,18 +25,17 @@ export default function CategoriesPage(props: PageProps<"/admin/categories">) {
 async function CategoriesPageContent({ searchParams }: PageProps<"/admin/categories">) {
   await requireUser();
   const raw = await searchParams;
-  const p = parseListParams(raw, { sorts: ["order", "name", "updated"], defaultSort: "order", defaultDir: "asc", filters: ["edition", "type"] });
+  const p = parseListParams(raw, { sorts: ["order", "name", "updated"], defaultSort: "order", defaultDir: "asc", filters: ["edition"] });
   const editionId = (p.filters as Record<string, string | undefined>).edition;
   const [{ rows, total }, editions, order] = await Promise.all([listCategoriesAdmin(p), editionOptions(), editionId ? reorderItems("categories", editionId) : null]);
   return (
-    <AdminPage title="Categories" description="Categories of each edition: voting type, weights, nominee type and order.">
+    <AdminPage title="Genre categories" description="The genres of each edition (Classical, Bati, Afrobeat…) and their order on the site.">
       <ListToolbar
-        searchPlaceholder="Search categories…"
+        searchPlaceholder="Search genres…"
         newHref={`/admin/categories/new${editionId ? `?edition=${editionId}` : ""}`}
-        newLabel="New category"
+        newLabel="New genre"
         filters={[
           { param: "edition", label: "Edition", options: editions.map((e) => ({ value: e.id, label: e.label })) },
-          { param: "type", label: "Voting", options: [{ value: "PUBLIC_VOTE", label: "Public vote" }, { value: "HYBRID", label: "Public + Jury" }, { value: "JURY", label: "Jury" }, { value: "HONORARY", label: "Honorary" }] },
         ]}
       />
       <CategoriesTable rows={rows} sort={{ key: p.sort, dir: p.dir }} />
@@ -47,7 +46,7 @@ async function CategoriesPageContent({ searchParams }: PageProps<"/admin/categor
           <ReorderList key={order.map((o) => o.id).join()} kind="categories" items={order} />
         </Panel>
       ) : (
-        <p className="mt-4 text-xs text-muted-foreground">Filter by an edition to reorder its categories.</p>
+        <p className="mt-4 text-xs text-muted-foreground">Filter by an edition to reorder its genres.</p>
       )}
     </AdminPage>
   );

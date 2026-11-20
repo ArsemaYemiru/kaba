@@ -1,25 +1,24 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import type { CategoryData } from "@/server/queries/awards";
 import { CategoryCard } from "./category-card";
 
-/** Categories of an edition (nominee counts only, never vote counts). */
+/** The genre categories of an edition, with honoree counts. */
 export async function CategoryGrid({ editionSlug, categories }: { editionSlug: string; categories: CategoryData[] }) {
-  const [tc, tv, tn] = await Promise.all([getTranslations("category"), getTranslations("votingType"), getTranslations("nominee")]);
+  const [tc, th, locale] = await Promise.all([getTranslations("category"), getTranslations("honoree"), getLocale()]);
+  const am = locale === "am";
   return (
     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {categories.map((c) => (
         <li key={c.id}>
           <CategoryCard
-            name={c.nameEn}
-            nameAm={c.nameAm}
+            name={(am && c.nameAm) || c.nameEn}
+            nameAm={am ? null : c.nameAm}
             icon={c.icon}
-            nomineeCountLabel={tc("nominees", { count: c._count.nominees })}
-            votingTypeLabel={tv(c.votingType)}
-            votingType={c.votingType}
+            description={(am && c.descriptionAm) || c.descriptionEn}
+            honoreeCountLabel={tc("honorees", { count: c._count.nominees })}
             href={`/awards/${editionSlug}/${c.slug}`}
-            labels={{ voted: tc("voted"), voteNow: tc("voteNow") }}
             sample={c.isSample}
-            sampleLabel={tn("sample")}
+            sampleLabel={th("sample")}
           />
         </li>
       ))}

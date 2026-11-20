@@ -1,6 +1,5 @@
 "use client";
 
-import NextLink from "next/link";
 import { Menu, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
@@ -10,12 +9,10 @@ import { Wordmark } from "@/components/brand/wordmark";
 import { Button } from "@/components/ui/button";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
-import { signOut } from "@/server/actions/auth";
-import type { MenuViewer } from "./account-menu";
 import { isActive, NAV_ITEMS } from "./nav-items";
 
 /** Full-screen mobile menu (spec §3.5): focus-trapped dialog, Esc closes. */
-export function MobileMenu({ votingOpen = false, viewer }: { votingOpen?: boolean; viewer?: MenuViewer | null }) {
+export function MobileMenu() {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -114,38 +111,6 @@ export function MobileMenu({ votingOpen = false, viewer }: { votingOpen?: boolea
                     );
                   })}
                 </ul>
-                <div className="mt-8 flex flex-col gap-3">
-                  {votingOpen ? (
-                    <Button asChild size="lg" className="w-full">
-                      <Link href="/vote">{t("vote")}</Link>
-                    </Button>
-                  ) : null}
-                  {viewer ? (
-                    <>
-                      <p className="mt-2 truncate text-sm text-muted-foreground">{viewer.email}</p>
-                      <Button asChild size="lg" variant="outline" className="w-full">
-                        <Link href="/account/ballot">{t("myBallot")}</Link>
-                      </Button>
-                      <Button asChild size="lg" variant="outline" className="w-full">
-                        <Link href="/account">{t("account")}</Link>
-                      </Button>
-                      {viewer.isStaff ? (
-                        <Button asChild size="lg" variant="outline" className="w-full">
-                          <NextLink href="/admin">{t("admin")}</NextLink>
-                        </Button>
-                      ) : null}
-                      <form action={signOut}>
-                        <Button type="submit" size="lg" variant="ghost" className="w-full">
-                          {t("signOut")}
-                        </Button>
-                      </form>
-                    </>
-                  ) : (
-                    <Button asChild size="lg" variant="outline" className="w-full">
-                      <Link href="/sign-in">{t("signIn")}</Link>
-                    </Button>
-                  )}
-                </div>
               </nav>
               <span
                 aria-hidden="true"

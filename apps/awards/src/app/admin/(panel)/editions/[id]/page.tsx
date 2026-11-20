@@ -1,8 +1,8 @@
-import { BarChart3, LayoutGrid } from "lucide-react";
+import { Award, LayoutGrid } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { EditionForm, PhasePanel } from "@/components/admin/modules/awards-forms";
+import { EditionForm } from "@/components/admin/modules/awards-forms";
 import { requireUser } from "@/lib/authz";
 import { editionToForm, getEditionForEdit } from "@/server/admin/awards-loaders";
 import { mediaByIds } from "@/server/admin/loaders";
@@ -27,14 +27,13 @@ async function EditEditionPageContent({ params }: PageProps<"/admin/editions/[id
   if (!e) notFound();
   return (
     <>
-      <div className="mx-auto grid w-full max-w-5xl gap-3 px-4 pt-6 sm:px-6 md:grid-cols-[1fr_auto]">
-        <PhasePanel editionId={e.id} phase={e.phase} isSuperAdmin={me.role === "SUPER_ADMIN"} />
-        <nav aria-label="Edition shortcuts" className="flex flex-col gap-2 text-sm">
+      <div className="mx-auto flex w-full max-w-5xl flex-wrap gap-2 px-4 pt-6 text-sm sm:px-6">
+        <nav aria-label="Edition shortcuts" className="flex flex-wrap gap-2">
           <Link href={`/admin/categories?edition=${e.id}`} className="inline-flex items-center gap-2 rounded-md border border-line px-3 py-2 hover:border-gold/60">
-            <LayoutGrid className="size-4 text-gold" /> Categories
+            <LayoutGrid className="size-4 text-gold" /> Genre categories ({e._count.categories})
           </Link>
-          <Link href={`/admin/results?edition=${e.id}`} className="inline-flex items-center gap-2 rounded-md border border-line px-3 py-2 hover:border-gold/60">
-            <BarChart3 className="size-4 text-gold" /> Results
+          <Link href={`/admin/honorees?edition=${e.id}`} className="inline-flex items-center gap-2 rounded-md border border-line px-3 py-2 hover:border-gold/60">
+            <Award className="size-4 text-gold" /> Honorees
           </Link>
         </nav>
       </div>

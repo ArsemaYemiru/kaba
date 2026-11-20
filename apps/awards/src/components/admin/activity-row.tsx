@@ -11,18 +11,9 @@ const COLORS: Record<string, string> = {
   delete: "text-red",
   deactivate: "text-red",
   activate: "text-green",
-  phase_change: "text-gold",
-  lock_results: "text-gold",
-  override: "text-red",
-  ban: "text-red",
-  unban: "text-green",
-  void_votes: "text-red",
-  restore_votes: "text-green",
   remove_sample: "text-red",
   role_change: "text-gold",
   password_reset: "text-gold",
-  jury_score: "text-foreground",
-  export: "text-muted-foreground",
 };
 
 export type ActivityEntry = {

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import type { SiteSettingsData } from "@/schemas/settings";
 import type { PickerMedia } from "@/server/actions/admin/media";
 import { removeSampleData, saveSettingsSection } from "@/server/actions/admin/settings";
-import { CheckboxField, SelectField, TextAreaField, TextField } from "../fields";
+import { SelectField, TextAreaField, TextField } from "../fields";
 import { RichTextField } from "../rich-text";
 import { MediaProvider } from "../media-context";
 import { MediaField } from "../media-field";
@@ -70,18 +70,17 @@ const s = (v: string | null | undefined) => v ?? "";
 
 type Option = { id: string; label: string; status: string };
 
-export function SettingsEditor({ settings, media, editions, nominees, artists }: { settings: SiteSettingsData; media: PickerMedia[]; editions: { id: string; label: string }[]; nominees: Option[]; artists: Option[] }) {
-  const { hero, social, contact, seo, footer, featured, sponsors, branding, ticker, pages, voting } = settings;
+export function SettingsEditor({ settings, media, editions, honorees, artists }: { settings: SiteSettingsData; media: PickerMedia[]; editions: { id: string; label: string }[]; honorees: Option[]; artists: Option[] }) {
+  const { hero, social, contact, seo, footer, featured, sponsors, branding, ticker, pages } = settings;
   const pageDefaults = {
     about: { bodyEn: pages.about.bodyEn, bodyAm: s(pages.about.bodyAm) },
-    rules: { bodyEn: pages.rules.bodyEn, bodyAm: s(pages.rules.bodyAm) },
     privacy: { bodyEn: pages.privacy.bodyEn, bodyAm: s(pages.privacy.bodyAm) },
     terms: { bodyEn: pages.terms.bodyEn, bodyAm: s(pages.terms.bodyAm) },
   };
   return (
     <MediaProvider initial={media}>
       <div className="flex flex-col gap-5">
-        <SectionForm section="currentEditionId" title="Current edition" description="Drives the home page, the ballot, the phase banner and /awards." defaults={{ id: settings.currentEditionId ?? "" }} toData={(v) => v.id || null}>
+        <SectionForm section="currentEditionId" title="Current edition" description="Drives the home page and /awards." defaults={{ id: settings.currentEditionId ?? "" }} toData={(v) => v.id || null}>
           <SelectField name="id" label="Edition" wide empty="— latest published —" options={editions.map((e) => ({ value: e.id, label: e.label }))} />
         </SectionForm>
 
@@ -96,17 +95,13 @@ export function SettingsEditor({ settings, media, editions, nominees, artists }:
           <MediaField name="videoId" label="Background video (muted loop)" type="VIDEO" />
         </SectionForm>
 
-        <SectionForm section="ticker" title="Ticker" description="One item per line. The current phase is added automatically." defaults={{ text: ticker.join("\n") }} toData={(v) => v.text.split("\n").map((l: string) => l.trim()).filter(Boolean)}>
+        <SectionForm section="ticker" title="Ticker" description="One item per line. The current edition and its awards night are added automatically." defaults={{ text: ticker.join("\n") }} toData={(v) => v.text.split("\n").map((l: string) => l.trim()).filter(Boolean)}>
           <TextAreaField name="text" label="Ticker items" rows={5} />
         </SectionForm>
 
-        <SectionForm section="featured" title="Featured" description="Home page featured nominees and artist spotlight, in this order. Only published items appear." defaults={{ nomineeIds: featured.nomineeIds, artistIds: featured.artistIds }}>
-          <OrderedPicker name="nomineeIds" label="Featured nominees" addLabel="+ Add nominee…" options={nominees} />
+        <SectionForm section="featured" title="Featured" description="Home page featured honorees and artist spotlight, in this order. Only published items appear." defaults={{ nomineeIds: featured.nomineeIds, artistIds: featured.artistIds }}>
+          <OrderedPicker name="nomineeIds" label="Featured honorees" addLabel="+ Add honoree…" options={honorees} />
           <OrderedPicker name="artistIds" label="Featured artists" addLabel="+ Add artist…" options={artists} />
-        </SectionForm>
-
-        <SectionForm section="voting" title="Voting" description="Applies to every vote immediately." defaults={{ requirePhoneVerificationToVote: voting.requirePhoneVerificationToVote }}>
-          <CheckboxField name="requirePhoneVerificationToVote" label="Require a verified phone number to vote" hint="Members verify by SMS code on their account page (needs ENABLE_PHONE_OTP and a real SMS provider in production)." />
         </SectionForm>
 
         <SectionForm section="branding" title="Logo" description="Without a logo, the header uses the ፈታ type wordmark." defaults={{ logoId: branding.logoId ?? "" }}>
@@ -141,22 +136,22 @@ export function SettingsEditor({ settings, media, editions, nominees, artists }:
         <div id="pages" className="scroll-mt-20">
           <SectionForm
             section="pages"
-            title="Pages: About, Voting rules, Privacy, Terms"
+            title="Pages: About, Privacy, Terms"
             description="Seeded as templates for organizer and legal review. A page stops being flagged as a template once you edit it."
             defaults={{ ...pageDefaults, faq: pages.faq.map((f) => ({ qEn: f.qEn, aEn: f.aEn, qAm: s(f.qAm), aAm: s(f.aAm) })), organizer: s(pages.organizer) }}
             toData={(v) => {
-              const page = (k: "about" | "rules" | "privacy" | "terms") => ({
+              const page = (k: "about" | "privacy" | "terms") => ({
                 bodyEn: v[k].bodyEn,
                 bodyAm: v[k].bodyAm || undefined,
                 isTemplate: pages[k].isTemplate && v[k].bodyEn === pageDefaults[k].bodyEn && v[k].bodyAm === pageDefaults[k].bodyAm,
               });
-              return { about: page("about"), rules: page("rules"), privacy: page("privacy"), terms: page("terms"), faq: v.faq, organizer: v.organizer || undefined };
+              return { about: page("about"), privacy: page("privacy"), terms: page("terms"), faq: v.faq, organizer: v.organizer || undefined };
             }}
           >
-            {(["about", "rules", "privacy", "terms"] as const).map((k) => (
+            {(["about", "privacy", "terms"] as const).map((k) => (
               <div key={k} className="flex flex-col gap-3 sm:col-span-2">
                 <h3 className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
-                  {{ about: "About", rules: "Voting rules", privacy: "Privacy", terms: "Terms" }[k]}
+                  {{ about: "About", privacy: "Privacy", terms: "Terms" }[k]}
                   {pages[k].isTemplate ? <span className="ml-2 rounded bg-gold/15 px-1.5 py-0.5 text-[0.625rem] text-gold normal-case">template</span> : null}
                 </h3>
                 <RichTextField name={`${k}.bodyEn`} label="English" />
@@ -250,9 +245,9 @@ function DangerZone() {
         <TriangleAlert className="size-4" /> Danger zone
       </h2>
       <p className="mt-1 text-sm">
-        <strong>Remove sample data</strong> deletes everything flagged as sample: the sample edition with its categories, nominees, votes, vote
-        history and results; the demo and synthetic members; and the sample media, videos, albums and draft news. Artists, staff, the welcome post
-        and these settings stay. This can&apos;t be undone.
+        <strong>Remove sample data</strong> deletes everything flagged as sample: the sample edition with its genres and honorees, the fictional
+        sample artists, and the sample media, videos, albums and draft news. Real artists, staff, the welcome post and these settings stay. This
+        can&apos;t be undone.
       </p>
       <label className="mt-3 flex flex-col gap-1 text-xs font-semibold">
         Type REMOVE SAMPLE DATA to confirm

@@ -50,7 +50,7 @@ async function ActivityPageContent({ searchParams }: PageProps<"/admin/activity"
     prisma.activityLog.count({ where }),
     prisma.activityLog.findMany({ distinct: ["action"], select: { action: true }, orderBy: { action: "asc" } }),
     prisma.activityLog.findMany({ distinct: ["entityType"], select: { entityType: true }, orderBy: { entityType: "asc" } }),
-    prisma.user.findMany({ where: { role: { not: "MEMBER" } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    prisma.user.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
   const pages = Math.max(1, Math.ceil(total / PER_PAGE));
   const qs = (patch: Record<string, string | undefined>) => {
@@ -62,7 +62,7 @@ async function ActivityPageContent({ searchParams }: PageProps<"/admin/activity"
   const select = "h-9 rounded-md border border-line bg-surface px-3 text-sm";
 
   return (
-    <AdminPage title="Activity Log" description="Staff sign-ins, content changes, phase changes, result locks, overrides, bans and vote voids, newest first.">
+    <AdminPage title="Activity Log" description="Staff sign-ins and content changes, newest first.">
       <form className="mb-4 flex flex-wrap items-end gap-3" method="get">
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
           Action

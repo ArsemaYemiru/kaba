@@ -1,8 +1,8 @@
 import { Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** Round gold-foil trophy badge (winner states only, spec §3.2). */
-export function TrophyBadge({ size = "md", label = "Winner", className }: { size?: "sm" | "md" | "lg"; label?: string; className?: string }) {
+/** Round gold-foil trophy badge (archive years, brand accents; spec §3.2). */
+export function TrophyBadge({ size = "md", label = "Feta Awards", className }: { size?: "sm" | "md" | "lg"; label?: string; className?: string }) {
   return (
     <span
       role="img"

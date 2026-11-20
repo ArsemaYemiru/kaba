@@ -9,7 +9,7 @@ import type { SearchItem } from "@/server/queries/search";
 
 const CommandPalette = dynamic(() => import("./command-palette"), { ssr: false });
 
-/** Header search: Ctrl/⌘+K or "/" opens a palette over nominees, artists and news. */
+/** Header search: Ctrl/⌘+K or "/" opens a palette over honorees, artists and news. */
 export function CommandSearch() {
   const t = useTranslations();
   const [open, setOpen] = useState(false);

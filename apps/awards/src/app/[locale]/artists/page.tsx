@@ -55,17 +55,17 @@ export default async function ArtistsPage({ params, searchParams }: PageProps<"/
 async function Directory({ searchParams }: { searchParams: PageProps<"/[locale]/artists">["searchParams"] }) {
   const raw = await searchParams;
   const one = (k: string) => (Array.isArray(raw[k]) ? raw[k][0] : raw[k]);
-  const f = ArtistFiltersSchema.parse({ q: one("q"), category: one("category"), legends: one("legends"), nominees: one("nominees"), sort: one("sort") });
+  const f = ArtistFiltersSchema.parse({ q: one("q"), category: one("category"), legends: one("legends"), honored: one("honored"), sort: one("sort") });
   const [t, ta, tc, artists] = await Promise.all([
     getTranslations("artists"),
     getTranslations("artist"),
     getTranslations("common"),
     listArtists(f),
   ]);
-  const current = { q: f.q || undefined, category: f.category, legends: f.legends, nominees: f.nominees, sort: f.sort === "featured" ? undefined : f.sort };
+  const current = { q: f.q || undefined, category: f.category, legends: f.legends, honored: f.honored, sort: f.sort === "featured" ? undefined : f.sort };
   const href = (patch: Record<string, string | undefined>) => withParams("/artists", current, patch);
   const toggle = "inline-flex h-9 items-center gap-1.5 rounded-full border px-4 text-sm font-medium transition-colors";
-  const filtered = !!(f.q || f.category || f.legends || f.nominees);
+  const filtered = !!(f.q || f.category || f.legends || f.honored);
 
   return (
     <>
@@ -90,12 +90,12 @@ async function Directory({ searchParams }: { searchParams: PageProps<"/[locale]/
           <Crown className="size-4" aria-hidden="true" /> {t("legendsOnly")}
         </Link>
         <Link
-          href={href({ nominees: f.nominees ? undefined : "1" })}
+          href={href({ honored: f.honored ? undefined : "1" })}
           scroll={false}
-          aria-current={f.nominees ? "true" : undefined}
-          className={cn(toggle, f.nominees ? "border-red text-red" : "border-line text-muted-foreground hover:text-foreground")}
+          aria-current={f.honored ? "true" : undefined}
+          className={cn(toggle, f.honored ? "border-gold text-gold" : "border-line text-muted-foreground hover:text-foreground")}
         >
-          <Award className="size-4" aria-hidden="true" /> {t("nomineesOnly")}
+          <Award className="size-4" aria-hidden="true" /> {t("honoredOnly")}
         </Link>
         <span className="mx-2 hidden h-6 w-px bg-line sm:block" aria-hidden="true" />
         <FilterChips
@@ -128,7 +128,7 @@ async function Directory({ searchParams }: { searchParams: PageProps<"/[locale]/
           className="mt-8"
           variant="compact"
           label={t("title")}
-          title={f.nominees && !f.q && !f.category && !f.legends ? t("emptyNominees") : t("empty")}
+          title={f.honored && !f.q && !f.category && !f.legends ? t("emptyHonored") : t("empty")}
           action={
             filtered ? (
               <Link href="/artists" className="text-sm font-semibold text-gold hover:underline">

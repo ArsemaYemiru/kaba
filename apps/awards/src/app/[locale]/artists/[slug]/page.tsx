@@ -20,8 +20,8 @@ import { VideoGrid } from "@/components/site/video-grid";
 import { Link } from "@/i18n/navigation";
 import { toArtistCardProps } from "@/lib/artist-display";
 import { formatLifespan, formatYearsActive } from "@/lib/years";
-import { getArtist, isNominee, isWinner } from "@/server/queries/artists";
-import { NominationList } from "@/components/awards/nomination-list";
+import { getArtist, isHonored } from "@/server/queries/artists";
+import { RecognitionList } from "@/components/awards/recognition-list";
 import { JsonLd } from "@/components/site/json-ld";
 import { artistLd } from "@/lib/structured-data";
 
@@ -134,14 +134,14 @@ export default async function ArtistPage({ params }: PageProps<"/[locale]/artist
       <ComingSoon variant="compact" icon={Images} title={t("noGallery")} body={t("noGalleryBody")} />
     ),
   });
-  // Feta Awards tab (spec §4.3): nominations and wins, only once announced.
+  // Feta Awards tab: every genre this artist is recognized in, per announced edition (A-76).
   tabs.push({
     id: "awards",
     label: t("tabs.awards"),
-    content: artist.nominations.length ? (
-      <NominationList nominations={artist.nominations} />
+    content: artist.recognitions.length ? (
+      <RecognitionList recognitions={artist.recognitions} />
     ) : (
-      <ComingSoon variant="compact" icon={Trophy} title={t("noNominations")} body={t("noNominationsBody")} />
+      <ComingSoon variant="compact" icon={Trophy} title={t("noRecognitions")} body={t("noRecognitionsBody")} />
     ),
   });
 
@@ -186,7 +186,7 @@ export default async function ArtistPage({ params }: PageProps<"/[locale]/artist
             <div className="min-w-0">
               <div className="flex flex-wrap gap-2">
                 {artist.isLegend ? <Chip variant="legend">{ta("legend")}</Chip> : null}
-                {isWinner(artist) ? <Chip variant="foil">{ta("winner")}</Chip> : isNominee(artist) ? <Chip variant="red">{ta("nominee")}</Chip> : null}
+                {isHonored(artist) ? <Chip variant="gold">{ta("honoree")}</Chip> : null}
                 {artist.isGroup ? <Chip variant="muted">{t("group")}</Chip> : null}
                 {categories.map((c) => (
                   <Chip key={c}>{ta(`categories.${c}`)}</Chip>

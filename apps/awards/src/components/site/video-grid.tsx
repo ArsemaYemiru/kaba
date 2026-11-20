@@ -31,7 +31,7 @@ export function VideoGrid({ videos, className, layout = "grid" }: { videos: Vide
       >
         {videos.map((v) => (
           <li key={v.id} className={cn(layout === "row" && "w-[82%] shrink-0 snap-start sm:w-auto")}>
-            <VideoCard video={v} onOpen={() => setOpen(v)} typeLabel={t(`videos.types.${v.type}`)} soonLabel={t("common.comingSoon")} sampleLabel={t("nominee.sample")} playLabel={t("common.play", { title: v.titleEn })} />
+            <VideoCard video={v} onOpen={() => setOpen(v)} typeLabel={t(`videos.types.${v.type}`)} soonLabel={t("common.comingSoon")} sampleLabel={t("common.sample")} playLabel={t("common.play", { title: v.titleEn })} />
           </li>
         ))}
       </ul>

@@ -17,15 +17,11 @@ export async function removeSampleRows() {
 
   const removed = await prisma.$transaction(
     async (tx) => {
-      // VoteEvent is append-only (DB trigger); deletion is allowed only inside this flagged transaction.
-      await tx.$executeRaw`SET LOCAL feta.allow_vote_event_delete = 'on'`;
-      const events = await tx.voteEvent.deleteMany({ where: { OR: [{ isSample: true }, { editionId: { in: editionIds } }] } });
-      const votes = await tx.vote.deleteMany({ where: { OR: [{ isSample: true }, { editionId: { in: editionIds } }] } });
-      const snapshots = await tx.resultSnapshot.deleteMany({ where: { editionId: { in: editionIds } } });
-      const nominees = await tx.nominee.count({ where: { category: { editionId: { in: editionIds } } } });
+      const honorees = await tx.nominee.count({ where: { category: { editionId: { in: editionIds } } } });
       const categories = await tx.awardCategory.count({ where: { editionId: { in: editionIds } } });
       const eds = await tx.awardEdition.deleteMany({ where: { id: { in: editionIds } } });
-      const members = await tx.user.deleteMany({ where: { isSample: true, role: "MEMBER" } });
+      // Fictional sample artists (their honors in real editions, if any, go with them).
+      const artists = await tx.artist.deleteMany({ where: { isSample: true } });
       const videos = await tx.video.deleteMany({ where: { isSample: true } });
       const albums = await tx.album.deleteMany({ where: { isSample: true } });
       const news = await tx.newsPost.deleteMany({ where: { isSample: true } });
@@ -44,7 +40,7 @@ export async function removeSampleRows() {
           },
         });
       }
-      return { editions: eds.count, categories, nominees, votes: votes.count, voteEvents: events.count, snapshots: snapshots.count, members: members.count, videos: videos.count, albums: albums.count, news: news.count, media: deletedMedia.count };
+      return { editions: eds.count, categories, honorees, artists: artists.count, videos: videos.count, albums: albums.count, news: news.count, media: deletedMedia.count };
     },
     { timeout: 60_000 },
   );

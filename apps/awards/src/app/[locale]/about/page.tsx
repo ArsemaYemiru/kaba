@@ -10,7 +10,7 @@ import { getSettings } from "@/server/queries/settings";
 
 export const metadata: Metadata = {
   title: "About",
-  description: "About Feta Awards: how nominees are announced, how voting works and how winners are revealed.",
+  description: "About Feta Awards: celebrating Ethiopian artists, genre by genre.",
   alternates: { canonical: "/about" },
 };
 
@@ -25,10 +25,10 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
     <CmsPage kicker={t("kicker")} title={t("title")} page={about}>
       <div className="mt-8 flex flex-wrap gap-3">
         <Button asChild>
-          <Link href="/vote">{t("voteCta")}</Link>
+          <Link href="/awards">{t("awardsCta")}</Link>
         </Button>
         <Button asChild variant="outline">
-          <Link href="/rules">{t("rulesCta")}</Link>
+          <Link href="/artists">{t("artistsCta")}</Link>
         </Button>
       </div>
       {faq.length ? (

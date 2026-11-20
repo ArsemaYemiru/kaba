@@ -3,37 +3,29 @@
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowLeft, ArrowRight, GripVertical, Loader2 } from "lucide-react";
+import { GripVertical, Loader2, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { CATEGORY_ICONS, CategoryIcon } from "@/components/awards/category-icons";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { changePhase, deleteEdition, reorderCategories, reorderNominees, saveCategory, saveEdition, saveNominee, bulkCategories, bulkNominees } from "@/server/actions/admin/awards";
+import { addArtistsToCategory, bulkCategories, bulkHonorees, deleteEdition, reorderCategories, reorderHonorees, saveCategory, saveEdition, saveHonoree } from "@/server/actions/admin/awards";
 import type { PickerMedia } from "@/server/actions/admin/media";
 import { EditorShell, Section } from "../editor-shell";
-import { CheckboxField, ChipsField, SelectField, TextAreaField, TextField } from "../fields";
+import { SelectField, TextAreaField, TextField } from "../fields";
 import { MediaProvider } from "../media-context";
 import { MediaField } from "../media-field";
 import { SlugField } from "./artist-form";
 
 type Status = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+const EDITION_STATUS_OPTS = [{ value: "DRAFT", label: "Draft" }, { value: "PUBLISHED", label: "Announced" }, { value: "ARCHIVED", label: "Archived" }];
 const STATUS_OPTS = [{ value: "DRAFT", label: "Draft" }, { value: "PUBLISHED", label: "Published" }, { value: "ARCHIVED", label: "Archived" }];
-const VOTING_OPTS = [
-  { value: "PUBLIC_VOTE", label: "Public vote" },
-  { value: "HYBRID", label: "Public + Jury" },
-  { value: "JURY", label: "Jury" },
-  { value: "HONORARY", label: "Honorary (single recipient)" },
-];
-const NOMINEE_TYPE_OPTS = ["PERSON", "GROUP", "SONG", "ALBUM", "MUSIC_VIDEO", "FILM", "SERIES", "CREATOR", "OTHER"].map((v) => ({ value: v, label: v.replace("_", " ").toLowerCase().replace(/^./, (c) => c.toUpperCase()) }));
-
 /* ───────────────────────── Editions ───────────────────────── */
 export type EditionFormValues = {
-  year: string; nameEn: string; nameAm: string; slug: string; nomineesAnnouncedAt: string; votingOpensAt: string; votingClosesAt: string; ceremonyAt: string;
-  venue: string; broadcastPartner: string; heroMediaId: string | null; showPublicPercentages: boolean; status: Status;
+  year: string; nameEn: string; nameAm: string; slug: string; ceremonyAt: string;
+  venue: string; broadcastPartner: string; heroMediaId: string | null; status: Status;
 };
 export function EditionForm({ id, initial, media, canDelete }: { id: string | null; initial: EditionFormValues; media: PickerMedia[]; canDelete: boolean }) {
   const form = useForm<EditionFormValues>({ defaultValues: initial });
@@ -61,13 +53,9 @@ export function EditionForm({ id, initial, media, canDelete }: { id: string | nu
           <TextField name="slug" label="URL slug" hint="Defaults to the year: /awards/2027." />
           <TextField name="nameEn" label="Name (English)" required />
           <TextField name="nameAm" label="Name (Amharic)" lang="am" />
-          <SelectField name="status" label="Status" options={STATUS_OPTS} hint="Only published editions appear on the site." />
-          <CheckboxField name="showPublicPercentages" label="Show public vote percentages on the winners page" />
+          <SelectField name="status" label="Status" options={EDITION_STATUS_OPTS} hint="Draft stays hidden. Announced shows the edition, its genres and honorees on the site." />
         </Section>
-        <Section title="Key dates (East Africa Time)" description="Votes are accepted only between “Voting opens” and “Voting closes”, and only while the phase is Voting open.">
-          <TextField name="nomineesAnnouncedAt" label="Nominees announced" type="datetime-local" />
-          <TextField name="votingOpensAt" label="Voting opens" type="datetime-local" />
-          <TextField name="votingClosesAt" label="Voting closes" type="datetime-local" />
+        <Section title="Awards night (East Africa Time, optional)">
           <TextField name="ceremonyAt" label="Awards night" type="datetime-local" />
           <TextField name="venue" label="Venue" hint="Leave empty until confirmed (shows “To be confirmed”)." />
           <TextField name="broadcastPartner" label="Broadcast partner" />
@@ -78,102 +66,17 @@ export function EditionForm({ id, initial, media, canDelete }: { id: string | nu
   );
 }
 
-const PHASES = ["DRAFT", "NOMINEES_ANNOUNCED", "VOTING_OPEN", "VOTING_CLOSED", "WINNERS_ANNOUNCED"] as const;
-const PHASE_LABEL: Record<(typeof PHASES)[number], string> = { DRAFT: "Draft", NOMINEES_ANNOUNCED: "Nominees announced", VOTING_OPEN: "Voting open", VOTING_CLOSED: "Voting closed", WINNERS_ANNOUNCED: "Winners announced" };
-const PHASE_HELP: Record<(typeof PHASES)[number], string> = {
-  DRAFT: "Hidden: categories and nominees aren't public yet.",
-  NOMINEES_ANNOUNCED: "Nominees are public; voting hasn't started.",
-  VOTING_OPEN: "Members can vote inside the voting window.",
-  VOTING_CLOSED: "No more votes. Lock the results on the Results page.",
-  WINNERS_ANNOUNCED: "Winners are public (from the locked results and any overrides).",
-};
-
-/** Phase control (spec §6): one step at a time, confirmation, reason when going back. */
-export function PhasePanel({ editionId, phase, isSuperAdmin }: { editionId: string; phase: (typeof PHASES)[number]; isSuperAdmin: boolean }) {
-  const router = useRouter();
-  const [target, setTarget] = useState<(typeof PHASES)[number] | null>(null);
-  const [reason, setReason] = useState("");
-  const [pending, start] = useTransition();
-  const i = PHASES.indexOf(phase);
-  const next = PHASES[i + 1];
-  const prev = i > 0 ? PHASES[i - 1] : undefined;
-  const back = target !== null && PHASES.indexOf(target) < i;
-  const needsSuper = (t: (typeof PHASES)[number]) => (t === "WINNERS_ANNOUNCED" || phase === "WINNERS_ANNOUNCED") && !isSuperAdmin;
-  return (
-    <section aria-labelledby="phase-title" className="rounded-lg border border-gold/40 bg-surface p-5">
-      <h2 id="phase-title" className="font-display text-sm font-bold">Phase</h2>
-      <ol className="mt-3 flex flex-wrap items-center gap-1.5 text-xs" aria-label="Edition phases">
-        {PHASES.map((p, k) => (
-          <li key={p} aria-current={p === phase ? "step" : undefined} className={cn("rounded-full border px-2.5 py-1", p === phase ? "border-gold bg-gold font-bold text-bg" : k < i ? "border-line text-muted-foreground line-through" : "border-line text-muted-foreground")}>
-            {PHASE_LABEL[p]}
-          </li>
-        ))}
-      </ol>
-      <p className="mt-3 text-sm text-muted-foreground">{PHASE_HELP[phase]}</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {prev ? (
-          <Button type="button" size="sm" variant="outline" disabled={needsSuper(prev)} onClick={() => setTarget(prev)}>
-            <ArrowLeft /> Back to {PHASE_LABEL[prev]}
-          </Button>
-        ) : null}
-        {next ? (
-          <Button type="button" size="sm" disabled={needsSuper(next)} onClick={() => setTarget(next)}>
-            Move to {PHASE_LABEL[next]} <ArrowRight />
-          </Button>
-        ) : null}
-      </div>
-      <Dialog open={!!target} onOpenChange={(o) => !o && setTarget(null)}>
-        <DialogContent className="border-line bg-surface sm:max-w-md">
-          <DialogTitle className="font-display text-lg font-bold">{target ? `Move to “${PHASE_LABEL[target]}”?` : ""}</DialogTitle>
-          <DialogDescription>{target ? PHASE_HELP[target] : ""} The change is logged.</DialogDescription>
-          {back ? (
-            <label className="flex flex-col gap-1 text-sm font-semibold">
-              Reason for going back (required)
-              <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} className="rounded-md border border-line bg-bg p-2 text-sm font-normal" />
-            </label>
-          ) : null}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setTarget(null)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant={back ? "destructive" : "default"}
-              disabled={pending || (back && reason.trim().length < 5)}
-              onClick={() =>
-                start(async () => {
-                  const r = await changePhase({ editionId, to: target, reason: back ? reason : undefined });
-                  if (r.ok) {
-                    toast.success(`Phase: ${PHASE_LABEL[target!]}`);
-                    setTarget(null);
-                    setReason("");
-                    router.refresh();
-                  } else toast.error(r.error);
-                })
-              }
-            >
-              {pending ? <Loader2 className="animate-spin" /> : null} Confirm
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </section>
-  );
-}
-
 /* ───────────────────────── Categories ───────────────────────── */
 export type CategoryFormValues = {
-  editionId: string; nameEn: string; nameAm: string; slug: string; descriptionEn: string; descriptionAm: string; icon: string;
-  votingType: "PUBLIC_VOTE" | "JURY" | "HYBRID" | "HONORARY"; publicWeight: string; juryWeight: string; nomineeType: string; sortOrder: string; status: Status;
+  editionId: string; nameEn: string; nameAm: string; slug: string; descriptionEn: string; descriptionAm: string; icon: string; sortOrder: string; status: Status;
 };
 export function CategoryForm({ id, initial, editions, liveHref }: { id: string | null; initial: CategoryFormValues; editions: { id: string; label: string }[]; liveHref: string | null }) {
   const form = useForm<CategoryFormValues>({ defaultValues: initial });
-  const votingType = useWatch({ control: form.control, name: "votingType" });
   const icon = useWatch({ control: form.control, name: "icon" });
   return (
     <EditorShell
       form={form}
-      title={useWatch({ control: form.control, name: "nameEn" }) || "New category"}
+      title={useWatch({ control: form.control, name: "nameEn" }) || "New genre category"}
       backHref="/admin/categories"
       backLabel="Categories"
       previewHref={liveHref}
@@ -188,7 +91,7 @@ export function CategoryForm({ id, initial, editions, liveHref }: { id: string |
           : undefined
       }
     >
-      <Section title="Category">
+      <Section title="Genre category" description="A genre within this edition, e.g. Classical, Bati, Afrobeat.">
         <SelectField name="editionId" label="Edition" options={editions.map((e) => ({ value: e.id, label: e.label }))} wide />
         <TextField name="nameEn" label="Name (English)" required />
         <TextField name="nameAm" label="Name (Amharic)" lang="am" />
@@ -202,87 +105,118 @@ export function CategoryForm({ id, initial, editions, liveHref }: { id: string |
             <CategoryIcon name={icon} className="size-5 text-gold" /> Preview
           </span>
         </div>
-        <SelectField name="nomineeType" label="Nominee type" options={NOMINEE_TYPE_OPTS} hint="Sets the fallback artwork (initials, disc, film…)." />
         <TextField name="sortOrder" label="Sort order" type="number" hint="Or drag to reorder on the Categories list." />
-      </Section>
-      <Section title="How the winner is decided">
-        <SelectField name="votingType" label="Voting type" options={VOTING_OPTS} wide />
-        {votingType === "HYBRID" ? (
-          <>
-            <TextField name="publicWeight" label="Public weight (%)" type="number" />
-            <TextField name="juryWeight" label="Jury weight (%)" type="number" hint="Public + jury must add up to 100." />
-          </>
-        ) : (
-          <p className="text-xs text-muted-foreground sm:col-span-2">
-            {votingType === "PUBLIC_VOTE" ? "Decided 100% by valid public votes." : votingType === "JURY" ? "Decided by jury scores entered on the Results page. No public votes." : "One recipient chosen by the organizers. No vote."}
-          </p>
-        )}
       </Section>
     </EditorShell>
   );
 }
 
-/* ───────────────────────── Nominees ───────────────────────── */
-export type NomineeFormValues = {
-  categoryId: string; displayNameEn: string; displayNameAm: string; slug: string; workTitleEn: string; workTitleAm: string; artistIds: string[];
+/* ───────────────────────── Honorees ───────────────────────── */
+export type HonoreeFormValues = {
+  categoryId: string; artistId: string; displayNameEn: string; displayNameAm: string; slug: string; workTitleEn: string; workTitleAm: string;
   imageId: string | null; blurbEn: string; blurbAm: string; youtubeUrl: string; sortOrder: string; status: Status;
 };
-export function NomineeForm({ id, initial, media, categories, artists, liveHref, hasVotes }: {
-  id: string | null; initial: NomineeFormValues; media: PickerMedia[]; categories: { id: string; label: string; nomineeType: string }[]; artists: { id: string; nameEn: string; status: string }[]; liveHref: string | null; hasVotes: boolean;
+type ArtistOption = { id: string; nameEn: string; status: string };
+const artistLabel = (a: ArtistOption) => a.nameEn + (a.status !== "PUBLISHED" ? " (draft: hidden until the artist is published)" : "");
+
+export function HonoreeForm({ id, initial, media, categories, artists, liveHref }: {
+  id: string | null; initial: HonoreeFormValues; media: PickerMedia[]; categories: { id: string; label: string }[]; artists: ArtistOption[]; liveHref: string | null;
 }) {
-  const form = useForm<NomineeFormValues>({ defaultValues: initial });
-  const categoryId = useWatch({ control: form.control, name: "categoryId" });
-  const workTitle = useWatch({ control: form.control, name: "workTitleEn" });
+  const form = useForm<HonoreeFormValues>({ defaultValues: initial });
+  const artistId = useWatch({ control: form.control, name: "artistId" });
   const displayName = useWatch({ control: form.control, name: "displayNameEn" });
-  const type = categories.find((c) => c.id === categoryId)?.nomineeType ?? "PERSON";
-  const isWork = ["SONG", "ALBUM", "MUSIC_VIDEO", "FILM", "SERIES"].includes(type);
+  const artistName = artists.find((a) => a.id === artistId)?.nameEn;
   return (
     <MediaProvider initial={media}>
       <EditorShell
         form={form}
-        title={workTitle || displayName || "New nominee"}
-        backHref="/admin/nominees"
-        backLabel="Nominees"
+        title={displayName || artistName || "New honoree"}
+        backHref="/admin/honorees"
+        backLabel="Honorees"
         previewHref={liveHref}
-        editHref={(i) => `/admin/nominees/${i}`}
-        onSave={(v) => saveNominee(id, v)}
+        editHref={(i) => `/admin/honorees/${i}`}
+        onSave={(v) => saveHonoree(id, v)}
         onDelete={
-          id && !hasVotes
+          id
             ? async () => {
-                const r = await bulkNominees({ ids: [id], op: "delete" });
+                const r = await bulkHonorees({ ids: [id], op: "delete" });
                 return r.ok ? { ok: true } : { ok: false, error: r.error };
               }
             : undefined
         }
       >
-        <Section title="Nominee" description={hasVotes ? "This nominee has votes: it can be archived but not deleted or moved to another category." : undefined}>
-          <SelectField name="categoryId" label="Category" options={categories.map((c) => ({ value: c.id, label: c.label }))} wide />
-          {isWork ? (
-            <>
-              <TextField name="workTitleEn" label="Work title (English)" required hint="Shown as the nominee's name, e.g. the song or film." />
-              <TextField name="workTitleAm" label="Work title (Amharic)" lang="am" />
-              <TextField name="displayNameEn" label="Credited artist / studio (English)" required />
-              <TextField name="displayNameAm" label="Credited artist / studio (Amharic)" lang="am" />
-            </>
-          ) : (
-            <>
-              <TextField name="displayNameEn" label="Display name (English)" required />
-              <TextField name="displayNameAm" label="Display name (Amharic)" lang="am" />
-            </>
-          )}
-          <SlugField source="displayNameEn" />
-          <SelectField name="status" label="Status" options={STATUS_OPTS} />
+        <Section title="Recognition" description="An artist honored in one genre category. Everyone in a category is recognized equally.">
+          <SelectField name="categoryId" label="Genre category" options={categories.map((c) => ({ value: c.id, label: c.label }))} wide />
+          <SelectField name="artistId" label="Artist" options={artists.map((a) => ({ value: a.id, label: artistLabel(a) }))} empty="Choose an artist…" wide hint="Add new artists under Content → Artists first." />
+          <SelectField name="status" label="Status" options={STATUS_OPTS} hint="Published honorees appear once their edition is announced." />
           <TextField name="sortOrder" label="Sort order" type="number" />
-          <TextField name="youtubeUrl" label="YouTube link (optional)" type="url" placeholder="https://www.youtube.com/watch?v=…" />
-          <MediaField name="imageId" label={isWork ? "Artwork" : "Photo (only with permission to use it)"} />
         </Section>
-        <Section title="About">
-          <TextAreaField name="blurbEn" label="Blurb (English)" rows={3} />
-          <TextAreaField name="blurbAm" label="Blurb (Amharic)" rows={3} lang="am" />
-          <ChipsField name="artistIds" label="Linked artist profiles" hint="Adds this nomination to the artist's Feta Awards tab." searchable options={artists.map((a) => ({ value: a.id, label: a.nameEn + (a.status !== "PUBLISHED" ? " (draft)" : ""), muted: a.status !== "PUBLISHED" }))} />
+        <Section title="Citation" description="Why this artist is recognized. Stick to facts you can stand behind.">
+          <TextAreaField name="blurbEn" label="Citation (English)" rows={4} />
+          <TextAreaField name="blurbAm" label="Citation (Amharic)" rows={4} lang="am" />
+        </Section>
+        <Section title="Featured work (optional)">
+          <TextField name="workTitleEn" label="Song, album or video (English)" />
+          <TextField name="workTitleAm" label="Song, album or video (Amharic)" lang="am" />
+          <TextField name="youtubeUrl" label="YouTube link" type="url" placeholder="https://www.youtube.com/watch?v=…" />
+          <MediaField name="imageId" label="Image (defaults to the artist's portrait)" />
+        </Section>
+        <Section title="Display (optional)">
+          <TextField name="displayNameEn" label="Display name (English)" hint="Leave empty to use the artist's name." />
+          <TextField name="displayNameAm" label="Display name (Amharic)" lang="am" />
+          <SlugField source="displayNameEn" />
         </Section>
       </EditorShell>
     </MediaProvider>
+  );
+}
+
+/** Category edit page: place several artists into this genre at once (created as drafts). */
+export function AddArtistsPanel({ categoryId, artists, placed }: { categoryId: string; artists: ArtistOption[]; placed: string[] }) {
+  const router = useRouter();
+  const [q, setQ] = useState("");
+  const [picked, setPicked] = useState<string[]>([]);
+  const [pending, start] = useTransition();
+  const taken = new Set(placed);
+  const shown = artists.filter((a) => !taken.has(a.id) && a.nameEn.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 60);
+  return (
+    <section aria-labelledby="add-artists-title" className="rounded-lg border border-line bg-surface p-5">
+      <h2 id="add-artists-title" className="font-display text-sm font-bold">Add artists to this genre</h2>
+      <p className="mt-1 text-sm text-muted-foreground">They&apos;re added as drafts. Open each one to write the citation, then publish.</p>
+      <label className="mt-3 flex flex-col gap-1 text-sm font-semibold">
+        Search artists
+        <input value={q} onChange={(e) => setQ(e.target.value)} className="h-9 rounded-md border border-line bg-bg px-3 text-sm font-normal" placeholder="Type a name…" />
+      </label>
+      <ul className="mt-3 grid max-h-64 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2" aria-label="Artists">
+        {shown.map((a) => (
+          <li key={a.id}>
+            <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-surface-2">
+              <input type="checkbox" checked={picked.includes(a.id)} onChange={(e) => setPicked((p) => (e.target.checked ? [...p, a.id] : p.filter((x) => x !== a.id)))} />
+              {artistLabel(a)}
+            </label>
+          </li>
+        ))}
+        {!shown.length ? <li className="px-2 py-1.5 text-sm text-muted-foreground">No artists to add.</li> : null}
+      </ul>
+      <Button
+        type="button"
+        size="sm"
+        className="mt-3"
+        disabled={pending || !picked.length}
+        onClick={() =>
+          start(async () => {
+            const r = await addArtistsToCategory({ categoryId, artistIds: picked });
+            if (r.ok) {
+              toast.success(`Added ${r.added} artist${r.added === 1 ? "" : "s"}${r.skipped ? ` (${r.skipped} already here)` : ""}`);
+              setPicked([]);
+              router.refresh();
+            } else toast.error(r.error);
+          })
+        }
+      >
+        {pending ? <Loader2 className="animate-spin" /> : <UserPlus />} Add {picked.length || ""} selected
+      </Button>
+    </section>
   );
 }
 
@@ -301,7 +235,7 @@ function Row({ id, label, status, index }: { id: string; label: string; status: 
   );
 }
 
-export function ReorderList({ kind, items }: { kind: "categories" | "nominees"; items: { id: string; label: string; status: string }[] }) {
+export function ReorderList({ kind, items }: { kind: "categories" | "honorees"; items: { id: string; label: string; status: string }[] }) {
   const router = useRouter();
   const [list, setList] = useState(items);
   const [pending, start] = useTransition();
@@ -313,7 +247,7 @@ export function ReorderList({ kind, items }: { kind: "categories" | "nominees"; 
     const next = arrayMove(list, from, to);
     setList(next);
     start(async () => {
-      const r = await (kind === "categories" ? reorderCategories : reorderNominees)({ ids: next.map((x) => x.id) });
+      const r = await (kind === "categories" ? reorderCategories : reorderHonorees)({ ids: next.map((x) => x.id) });
       if (r.ok) {
         toast.success("Order saved");
         router.refresh();

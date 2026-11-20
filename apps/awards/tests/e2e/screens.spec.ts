@@ -23,11 +23,30 @@ for (const width of [390, 1440]) {
     expect(ethiopic.loaded).toBeGreaterThan(0);
     expect(ethiopic.family).toMatch(/Noto.Sans.Ethiopic/i);
 
-    // Countdown has started ticking on the client.
-    await expect(page.locator("#countdown ol").first()).not.toContainText("––");
-
     expect(await horizontalOverflow(page), "horizontal overflow in px").toBeLessThanOrEqual(0);
     expect(errors).toEqual([]);
     await page.screenshot({ path: `${OUT}/styleguide-${width}.png`, fullPage: true });
+  });
+}
+
+/** Public screenshots of the recognition pages (A-76). */
+const year = new Intl.DateTimeFormat("en", { year: "numeric", timeZone: "Africa/Addis_Ababa" }).format(new Date());
+for (const [name, url] of [
+  ["home", "/"],
+  ["edition", `/awards/${year}`],
+  ["genre", `/awards/${year}/classical`],
+  ["honoree", "/honorees/sample-artist-1a-sample"],
+  ["artist-recognized", "/artists/sample-artist-1a"],
+  ["artists", "/artists"],
+] as const) {
+  test(`screens: ${name}`, async ({ page }) => {
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(url);
+      await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+      await settle(page);
+      expect(await horizontalOverflow(page), `${name} @ ${width}`).toBeLessThanOrEqual(0);
+      await page.screenshot({ path: `${OUT}/r-${name}-${width}.png`, fullPage: true });
+    }
   });
 }
