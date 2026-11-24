@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { rmSync } from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
+import { FX } from "./fixture";
 import { gotoReady, waitHydrated } from "./helpers";
 import { createStaff, db, deleteTestStaff } from "./staff";
 
@@ -213,7 +214,7 @@ test("CSV import: preview shows row errors and nothing is saved until the file i
   await page.getByRole("button", { name: "Import CSV" }).click();
   const dialog = page.getByRole("dialog", { name: "Import honorees from CSV" });
   await dialog.getByLabel("Edition").selectOption({ label: `E2E Awards ${YEAR}` });
-  const bad = `category,artist,blurbEn,status\nE2E Bati,mulatu-astatke,x,DRAFT\nno-such-genre,mulatu-astatke,x,DRAFT\nE2E Bati,no-such-artist,x,DRAFT\nE2E Bati,${artists[0]!.slug},x,DRAFT\n`;
+  const bad = `category,artist,blurbEn,status\nE2E Bati,${FX.legend.slug},x,DRAFT\nno-such-genre,${FX.legend.slug},x,DRAFT\nE2E Bati,no-such-artist,x,DRAFT\nE2E Bati,${artists[0]!.slug},x,DRAFT\n`;
   await dialog.getByLabel("CSV file").setInputFiles({ name: "bad.csv", mimeType: "text/csv", buffer: Buffer.from(bad) });
   await dialog.getByRole("button", { name: "Preview" }).click();
   await expect(dialog.getByText(/1 valid, 3 with errors/)).toBeVisible();
@@ -221,13 +222,102 @@ test("CSV import: preview shows row errors and nothing is saved until the file i
   await expect(dialog.getByText(/unknown artist slug “no-such-artist”/)).toBeVisible();
   await expect(dialog.getByText(/already in the category/)).toBeVisible();
   await expect(dialog.getByRole("button", { name: /^Import/ })).toBeDisabled();
-  const good = `category,artist,blurbEn,workTitleEn,status\n${ids.categorySlug},mulatu-astatke,"CSV citation",,DRAFT\n`;
+  const good = `category,artist,blurbEn,workTitleEn,status\n${ids.categorySlug},${FX.legend.slug},"CSV citation",,DRAFT\n`;
   await dialog.getByLabel("CSV file").setInputFiles({ name: "good.csv", mimeType: "text/csv", buffer: Buffer.from(good) });
   await dialog.getByRole("button", { name: "Preview" }).click();
   await expect(dialog.getByText(/1 valid, 0 with errors/)).toBeVisible();
   await dialog.getByRole("button", { name: "Import 1 honorees" }).click();
   await expect(dialog).toBeHidden();
-  const imported = await db<{ blurbEn: string; status: string }>(`SELECT "blurbEn", status FROM "Nominee" WHERE "categoryId" = $1 AND "artistId" = (SELECT id FROM "Artist" WHERE slug = 'mulatu-astatke')`, [ids.category]);
+  const imported = await db<{ blurbEn: string; status: string }>(`SELECT "blurbEn", status FROM "Nominee" WHERE "categoryId" = $1 AND "artistId" = (SELECT id FROM "Artist" WHERE slug = $2)`, [ids.category, FX.legend.slug]);
   // Imported as a draft in a throwaway edition (deleted after), never shown publicly.
   expect(imported).toEqual([{ blurbEn: "CSV citation", status: "DRAFT" }]);
+});
+
+test("media library: big camera photos are shrunk in the browser, uploaded a few at a time, and can be deleted", async () => {
+  test.setTimeout(180_000);
+  // A 6000×4000 noisy JPEG is ~15–20 MB, like the photographer's originals (the old limit was 10 MB).
+  const big = await sharp({ create: { width: 6000, height: 4000, channels: 3, background: "#808080", noise: { type: "gaussian", mean: 128, sigma: 40 } } }).jpeg({ quality: 95 }).toBuffer();
+  expect(big.length).toBeGreaterThan(10 * 1024 * 1024);
+  const small = await sharp({ create: { width: 1200, height: 800, channels: 3, background: { r: 30, g: 90, b: 160 } } }).jpeg().toBuffer();
+
+  const sent: number[] = [];
+  let inFlight = 0;
+  let maxInFlight = 0;
+  const onRequest = (r: import("@playwright/test").Request) => {
+    if (!r.url().endsWith("/api/admin/media/upload")) return;
+    sent.push(r.postDataBuffer()?.length ?? 0);
+    maxInFlight = Math.max(maxInFlight, ++inFlight);
+  };
+  const onDone = (r: import("@playwright/test").Request) => r.url().endsWith("/api/admin/media/upload") && inFlight--;
+  page.on("request", onRequest);
+  page.on("requestfinished", onDone);
+  page.on("requestfailed", onDone);
+
+  await adminGo(page, "/admin/media");
+  const files = [
+    { name: `e2e-${RUN}-big.jpg`, mimeType: "image/jpeg", buffer: big },
+    ...[1, 2, 3, 4, 5].map((n) => ({ name: `e2e-${RUN}-small-${n}.jpg`, mimeType: "image/jpeg", buffer: small })),
+  ];
+  await page.getByLabel("Upload files").setInputFiles(files);
+  await expect(page.getByLabel("Uploaded")).toHaveCount(files.length, { timeout: 120_000 });
+  await expect(page.getByLabel("Failed")).toHaveCount(0);
+  page.off("request", onRequest);
+  page.off("requestfinished", onDone);
+  page.off("requestfailed", onDone);
+
+  expect(sent).toHaveLength(files.length);
+  expect(Math.max(...sent), "the big photo is resized before it is sent").toBeLessThan(8 * 1024 * 1024);
+  expect(maxInFlight, "uploads are queued").toBeLessThanOrEqual(3);
+  const rows = await db<{ id: string; width: number; height: number }>(
+    `SELECT id, width, height FROM "Media" WHERE "uploadedById" IN (SELECT id FROM "user" WHERE email = $1) AND "createdAt" > now() - interval '5 minutes' ORDER BY width DESC`,
+    [emails.admin],
+  );
+  expect(rows.length).toBeGreaterThanOrEqual(files.length);
+  expect(rows[0]!.width).toBe(1600); // stored variants top out at 1600px wide
+  expect(rows[0]!.height).toBeGreaterThan(1000); // orientation and aspect kept (3:2)
+});
+
+test("artists: delete from the editor (honors go too) and in bulk from the list", async ({ browser }) => {
+  test.setTimeout(120_000);
+  const mk = async (slug: string, name: string) => {
+    const id = randomUUID();
+    await db(`INSERT INTO "Artist" (id, slug, "nameEn", categories, status, "updatedAt") VALUES ($1, $2, $3, '{SINGER}', 'PUBLISHED', now())`, [id, slug, name]);
+    return id;
+  };
+  const one = await mk(`e2e-artist-${RUN}-del-one`, `E2E Delete ${RUN} One`);
+  await mk(`e2e-artist-${RUN}-del-two`, `E2E Delete ${RUN} Two`);
+  await mk(`e2e-artist-${RUN}-del-three`, `E2E Delete ${RUN} Three`);
+  // Honor the first one in the throwaway genre and feature it on the home page.
+  const honorId = randomUUID();
+  await db(`INSERT INTO "Nominee" (id, "categoryId", "artistId", slug, "displayNameEn", status, "updatedAt") VALUES ($1, $2, $3, $4, $5, 'PUBLISHED', now())`, [honorId, ids.category, one, `e2e-artist-${RUN}-del-one-honor`, "x"]);
+  const [before] = await db<{ featured: { nomineeIds: string[]; artistIds: string[] } }>(`SELECT featured FROM "SiteSettings" WHERE id = 1`);
+  await db(`UPDATE "SiteSettings" SET featured = $1 WHERE id = 1`, [JSON.stringify({ nomineeIds: [...before!.featured.nomineeIds, honorId], artistIds: [...before!.featured.artistIds, one] })]);
+
+  // Editor → Delete (confirm mentions the honors).
+  await adminGo(page, `/admin/artists/${one}`);
+  let message = "";
+  page.once("dialog", (d) => {
+    message = d.message();
+    void d.accept();
+  });
+  await page.getByRole("button", { name: "Delete" }).click();
+  await page.waitForURL((u) => u.pathname === "/admin/artists");
+  expect(message).toContain("honors are removed too");
+  expect(await db(`SELECT 1 FROM "Artist" WHERE id = $1`, [one])).toHaveLength(0);
+  expect(await db(`SELECT 1 FROM "Nominee" WHERE id = $1`, [honorId])).toHaveLength(0);
+  const [after] = await db<{ featured: { nomineeIds: string[]; artistIds: string[] } }>(`SELECT featured FROM "SiteSettings" WHERE id = 1`);
+  expect(after!.featured.nomineeIds).not.toContain(honorId);
+  expect(after!.featured.artistIds).not.toContain(one);
+  const pub = await newContext(browser);
+  expect((await (await pub.newPage()).goto(`/artists/e2e-artist-${RUN}-del-one`))?.status()).toBe(404);
+  await pub.close();
+
+  // List → select both → bulk Delete.
+  await adminGo(page, `/admin/artists?q=${encodeURIComponent(`E2E Delete ${RUN}`)}`);
+  await expect(page.getByRole("checkbox", { name: "Select row" })).toHaveCount(2);
+  await page.getByRole("checkbox", { name: "Select all rows" }).check();
+  page.once("dialog", (d) => void d.accept());
+  await page.getByRole("toolbar", { name: "Bulk actions" }).getByRole("button", { name: "Delete" }).click();
+  await expect(page.getByText("Delete: 2 item(s)")).toBeVisible();
+  expect(await db(`SELECT 1 FROM "Artist" WHERE slug LIKE $1`, [`e2e-artist-${RUN}-del-%`])).toHaveLength(0);
 });

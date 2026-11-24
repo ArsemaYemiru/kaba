@@ -2,7 +2,6 @@ import { ArrowRight, Trophy } from "lucide-react";
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Chip } from "@/components/brand/chip";
 import { ComingSoon } from "@/components/brand/coming-soon";
 import { TrophyBadge } from "@/components/awards/gold-foil";
 import { PageHeader } from "@/components/site/section-heading";
@@ -16,7 +15,7 @@ export default async function ArchivePage({ params }: PageProps<"/[locale]/award
   await connection();
   const { locale } = await params;
   setRequestLocale(locale);
-  const [t, th, editions] = await Promise.all([getTranslations("awards"), getTranslations("honoree"), listEditions()]);
+  const [t, editions] = await Promise.all([getTranslations("awards"), listEditions()]);
   return (
     <>
       <PageHeader kicker={t("title")} title={t("archiveTitle")} intro={t("archiveIntro")} />
@@ -30,11 +29,6 @@ export default async function ArchivePage({ params }: PageProps<"/[locale]/award
                   <span className="min-w-0 flex-1">
                     <span className="block font-display text-2xl font-extrabold">{e.year}</span>
                     <span className="block text-sm text-muted-foreground">{e.nameEn}</span>
-                    {e.isSample ? (
-                      <span className="mt-2 flex flex-wrap gap-1.5">
-                        <Chip size="sm" variant="sample">{th("sample")}</Chip>
-                      </span>
-                    ) : null}
                   </span>
                   <ArrowRight className="size-5 text-gold transition-transform group-hover:translate-x-1" aria-hidden="true" />
                 </Link>

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { horizontalOverflow, settle } from "./helpers";
+import { FX, GENRE_URL, HONOREE_URL } from "./fixture";
 
 const OUT = path.resolve(__dirname, "../../../../docs/awards/screens");
 
@@ -30,13 +31,13 @@ for (const width of [390, 1440]) {
 }
 
 /** Public screenshots of the recognition pages (A-76). */
-const year = new Intl.DateTimeFormat("en", { year: "numeric", timeZone: "Africa/Addis_Ababa" }).format(new Date());
+const year = FX.year;
 for (const [name, url] of [
   ["home", "/"],
   ["edition", `/awards/${year}`],
-  ["genre", `/awards/${year}/classical`],
-  ["honoree", "/honorees/sample-artist-1a-sample"],
-  ["artist-recognized", "/artists/sample-artist-1a"],
+  ["genre", GENRE_URL],
+  ["honoree", HONOREE_URL],
+  ["artist-recognized", `/artists/${FX.honorees[0].slug}`],
   ["artists", "/artists"],
 ] as const) {
   test(`screens: ${name}`, async ({ page }) => {

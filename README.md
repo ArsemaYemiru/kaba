@@ -9,7 +9,7 @@ It is a Next.js 16 app in `apps/awards` (a pnpm workspace) with an admin CMS. On
 ```bash
 pnpm install
 pnpm db:up        # Postgres (5436) + Mailpit (8026) for local development
-pnpm db:reset     # migrations + sample edition (fictional sample artists)
+pnpm db:reset     # migrations + seed: staff accounts, welcome post, settings
 pnpm dev          # http://localhost:3001  ·  admin at /sign-in
 ```
 

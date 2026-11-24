@@ -22,6 +22,7 @@ export function EditorShell<T extends FieldValues>({
   previewHref,
   onSave,
   onDelete,
+  deleteMessage,
   editHref,
   children,
 }: {
@@ -32,6 +33,8 @@ export function EditorShell<T extends FieldValues>({
   previewHref?: string | null;
   onSave: (values: T) => Promise<SaveResult>;
   onDelete?: () => Promise<{ ok: boolean; error?: string }>;
+  /** Extra sentence for the delete confirmation (what else goes with it). */
+  deleteMessage?: string;
   /** Builds the edit URL for a newly created item. */
   editHref: (id: string) => string;
   children: React.ReactNode;
@@ -135,7 +138,7 @@ export function EditorShell<T extends FieldValues>({
               className="text-red hover:text-red"
               disabled={pending}
               onClick={() => {
-                if (!window.confirm(`Delete “${title}”? This can't be undone.`)) return;
+                if (!window.confirm(`Delete “${title}”?${deleteMessage ? ` ${deleteMessage}` : ""} This can't be undone.`)) return;
                 start(async () => {
                   const r = await onDelete();
                   if (r.ok) {

@@ -12,16 +12,17 @@ let cache: { file: string; mtime: number; ids: Set<string> } | null = null;
 
 function load(): Set<string> {
   for (const rel of CANDIDATES) {
-    const file = path.join(process.cwd(), rel);
+    // The manifest is always part of the build output; don't trace the whole project for it.
+    const file = path.join(/*turbopackIgnore: true*/ process.cwd(), rel);
     let mtime: number;
     try {
-      mtime = statSync(file).mtimeMs;
+      mtime = statSync(/*turbopackIgnore: true*/ file).mtimeMs;
     } catch {
       continue;
     }
     if (cache && cache.file === file && cache.mtime === mtime) return cache.ids;
     try {
-      const manifest = JSON.parse(readFileSync(file, "utf8")) as { node?: Record<string, { filename?: string }> };
+      const manifest = JSON.parse(readFileSync(/*turbopackIgnore: true*/ file, "utf8")) as { node?: Record<string, { filename?: string }> };
       const ids = new Set(Object.entries(manifest.node ?? {}).filter(([, v]) => v.filename?.includes("server/actions/admin/")).map(([id]) => id));
       cache = { file, mtime, ids };
       return ids;

@@ -16,7 +16,6 @@ const cardSelect = {
   publishedAt: true,
   tags: true,
   featured: true,
-  isSample: true,
   edition: { select: { slug: true, year: true, status: true } },
   cover: { select: mediaSelect },
 } as const;

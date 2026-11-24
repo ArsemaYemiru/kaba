@@ -19,7 +19,7 @@ const view = (href: string, label: string) => (
 
 /* Categories */
 export type CategoryRow = {
-  id: string; slug: string; nameEn: string; icon: string; status: Status; isSample: boolean; sortOrder: number; updatedAt: Date;
+  id: string; slug: string; nameEn: string; icon: string; status: Status; sortOrder: number; updatedAt: Date;
   edition: { slug: string; year: number; status: Status }; _count: { nominees: number };
 };
 const categoryCols: ColumnDef<CategoryRow, unknown>[] = [
@@ -53,7 +53,6 @@ const categoryCols: ColumnDef<CategoryRow, unknown>[] = [
     cell: ({ row: { original: c } }) => (
       <span className="flex gap-1">
         <StatusBadge status={c.status} />
-        {c.isSample ? <Chip size="sm" variant="muted">Sample</Chip> : null}
       </span>
     ),
   },
@@ -65,7 +64,7 @@ export function CategoriesTable({ rows, sort }: { rows: CategoryRow[]; sort: { k
 
 /* Honorees */
 export type HonoreeRow = {
-  id: string; slug: string; displayNameEn: string; workTitleEn: string | null; blurbEn: string | null; status: Status; isSample: boolean; updatedAt: Date;
+  id: string; slug: string; displayNameEn: string; workTitleEn: string | null; blurbEn: string | null; status: Status; updatedAt: Date;
   image: { url: string; alt: string } | null; artist: { nameEn: string; status: Status; portrait: { url: string; alt: string } | null }; category: { nameEn: string; edition: { year: number } };
 };
 const honoreeCols: ColumnDef<HonoreeRow, unknown>[] = [
@@ -96,7 +95,6 @@ const honoreeCols: ColumnDef<HonoreeRow, unknown>[] = [
         <StatusBadge status={n.status} />
         {!n.blurbEn ? <Chip size="sm" variant="muted">No citation</Chip> : null}
         {n.artist.status !== "PUBLISHED" ? <Chip size="sm" variant="muted">Artist is draft</Chip> : null}
-        {n.isSample ? <Chip size="sm" variant="muted">Sample</Chip> : null}
       </span>
     ),
   },

@@ -60,7 +60,7 @@ export default async function ArtistPage({ params }: PageProps<"/[locale]/artist
   const lifespan = formatLifespan(artist.birthYear, artist.deathYear);
   const active = formatYearsActive(artist.yearsActive);
   const categories = artist.categories.filter((c) => c !== "OTHER");
-  const videos = artist.videos.map((v) => ({ ...v.video, id: v.video.slug, captionsUrl: null, isSample: false, edition: null }));
+  const videos = artist.videos.map((v) => ({ ...v.video, id: v.video.slug, captionsUrl: null, edition: null }));
   const gallery = artist.gallery
     .map((g) => g.media)
     .filter((m) => m.type === "IMAGE")

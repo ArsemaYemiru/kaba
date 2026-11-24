@@ -53,16 +53,8 @@ export async function launchChecklist(): Promise<ChecklistItem[]> {
   const defaults = [...new Set([...SEEDED_DEFAULT_PASSWORDS, process.env.SEED_ADMIN_PASSWORD, process.env.SEED_EDITOR_PASSWORD].filter((p): p is string => !!p))];
   const edition = await dashboardEdition();
 
-  const [credentials, sample, admins, artistsNoPhoto, settingsRow] = await Promise.all([
+  const [credentials, admins, artistsNoPhoto, settingsRow] = await Promise.all([
     prisma.account.findMany({ where: { providerId: "credential", user: { isActive: true } }, select: { password: true, user: { select: { email: true } } } }),
-    Promise.all([
-      prisma.awardEdition.count({ where: { isSample: true } }),
-      prisma.artist.count({ where: { isSample: true } }),
-      prisma.media.count({ where: { isSample: true } }),
-      prisma.album.count({ where: { isSample: true } }),
-      prisma.newsPost.count({ where: { isSample: true } }),
-      prisma.video.count({ where: { isSample: true } }),
-    ]),
     prisma.user.findMany({ where: { role: "SUPER_ADMIN", isActive: true, NOT: { twoFactorEnabled: true } }, select: { email: true } }),
     prisma.artist.count({ where: { status: "PUBLISHED", portraitId: null } }),
     prisma.siteSettings.findUnique({ where: { id: 1 } }),
@@ -78,8 +70,6 @@ export async function launchChecklist(): Promise<ChecklistItem[]> {
       }
     }
   }
-  const [sampleEditions, ...sampleContent] = sample;
-  const sampleTotal = sample.reduce((a, b) => a + b, 0);
   const branding = SiteSettingsSchema.shape.branding.safeParse(settingsRow?.branding);
   const social = SiteSettingsSchema.shape.social.safeParse(settingsRow?.social);
   const contact = SiteSettingsSchema.shape.contact.safeParse(settingsRow?.contact);
@@ -91,14 +81,6 @@ export async function launchChecklist(): Promise<ChecklistItem[]> {
 
   return [
     { id: "default-passwords", label: "Default passwords changed", ok: usingDefault.length === 0, detail: usingDefault.length ? `Still using a seeded password: ${usingDefault.join(", ")}` : "No staff account uses a seeded password.", href: "/admin/users", superAdminOnly: true },
-    {
-      id: "sample-data",
-      label: "Sample data removed",
-      ok: sampleTotal === 0,
-      detail: sampleTotal ? `${n(sampleEditions!, "sample edition", "sample editions")} and ${sampleContent.reduce((a, b) => a + b, 0)} sample artists/media/videos/albums/news.` : "No sample data left.",
-      href: "/admin/settings#danger",
-      superAdminOnly: true,
-    },
     {
       id: "edition",
       label: "Current edition announced",

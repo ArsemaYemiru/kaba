@@ -1,25 +1,25 @@
 /**
  * Feta Awards seed (spec §9). Idempotent: rows are created when missing and
- * never overwritten. Production creates only staff, site settings and artist
- * profiles, and refuses default passwords.
+ * never overwritten, so staff edits survive a re-run. It creates only what the
+ * admin needs to start: the two staff accounts, the welcome post and default
+ * site settings. Artists, photos, editions and honorees are all added in the
+ * admin (A-81). Production refuses default passwords.
  *   pnpm --filter awards db:seed   |   pnpm --filter awards db:reset
  */
 import "./seed/load-env";
 
-import sharp from "sharp";
+import { rm } from "node:fs/promises";
+import path from "node:path";
 import { Prisma } from "../src/generated/prisma/client";
 import { auth } from "../src/lib/auth";
 import { prisma } from "../src/lib/db";
 import { normalizeEmail } from "../src/lib/email";
 import { getEnv } from "../src/lib/env";
-import { processImage } from "../src/lib/media/process-image";
+import { getLocalStorage } from "../src/lib/storage";
 import { slugify } from "../src/lib/slug";
 import am from "../src/messages/am.json";
 import { SiteSettingsSchema, type SiteSettingsData } from "../src/schemas/settings";
-import { ALBUMS, artworks, grainTile, HERO_POSTER, OG_IMAGE } from "./seed/artwork";
-import { FEATURED_ARTISTS, PUBLISHED_ARTISTS } from "./seed/artists";
-import { ABOUT, FAQ, NEWS, PRIVACY, TERMS, VIDEOS } from "./seed/content";
-import { GENRES, honoreesFor, SAMPLE_CITATION } from "./seed/edition";
+import { ABOUT, FAQ, NEWS, PRIVACY, TERMS } from "./seed/content";
 
 const env = getEnv();
 const PROD = env.NODE_ENV === "production";
@@ -50,7 +50,7 @@ async function hasher() {
 
 async function upsertCredentialUser(
   hash: (p: string) => Promise<string>,
-  u: { email: string; name: string; password: string; role: "SUPER_ADMIN" | "EDITOR"; emailVerified: boolean; mustChangePassword: boolean; isSample: boolean },
+  u: { email: string; name: string; password: string; role: "SUPER_ADMIN" | "EDITOR"; emailVerified: boolean; mustChangePassword: boolean },
 ) {
   const email = u.email.toLowerCase();
   const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
@@ -69,7 +69,6 @@ async function upsertCredentialUser(
         role: u.role,
         emailVerified: u.emailVerified,
         mustChangePassword: u.mustChangePassword,
-        isSample: u.isSample,
       },
     });
     await tx.account.create({ data: { userId: row.id, accountId: row.id, providerId: "credential", password } });
@@ -87,192 +86,22 @@ async function seedStaff(hash: (p: string) => Promise<string>) {
   if (PROD) for (const a of accounts) if (a.password === a.def) throw new Error(`Refusing to seed ${a.role} with the default password in production. Set ${a.envName}.`);
   const ids: Record<string, string> = {};
   for (const a of accounts) {
-    const r = await upsertCredentialUser(hash, { ...a, emailVerified: true, mustChangePassword: true, isSample: false });
+    const r = await upsertCredentialUser(hash, { ...a, emailVerified: true, mustChangePassword: true });
     ids[a.role] = r.id;
     logins.push({ role: a.role, email: a.email.toLowerCase(), password: r.created ? a.password : "(existing, unchanged)", note: "must change password on first sign-in" });
   }
   return ids as { SUPER_ADMIN: string; EDITOR: string };
 }
 
-/* ─────────────────────────── artists ─────────────────────────── */
+/* ─────────────────────────── news ─────────────────────────── */
 
-async function seedArtists() {
-  let order = 0;
-  for (const a of PUBLISHED_ARTISTS) {
-    const slug = slugify(a.nameEn);
-    const existing = await prisma.artist.findUnique({ where: { slug }, select: { id: true } });
-    if (!existing) {
-      await prisma.artist.create({
-        data: {
-          slug,
-          nameEn: a.nameEn,
-          nameAm: a.nameAm,
-          stageName: a.stageName,
-          legalNameEn: a.legalNameEn,
-          legalNameAm: a.legalNameAm,
-          isGroup: a.isGroup ?? false,
-          categories: a.categories,
-          genres: a.genres,
-          birthYear: a.birthYear,
-          deathYear: a.deathYear,
-          yearsActive: a.yearsActive,
-          isLegend: a.isLegend ?? false,
-          featured: FEATURED_ARTISTS.includes(a.nameEn),
-          shortBioEn: a.shortBioEn,
-          notableWorks: (a.notableWorks ?? []) as Prisma.InputJsonValue,
-          socialLinks: [],
-          status: "PUBLISHED",
-          sortOrder: order,
-        },
-      });
-    }
-    order++;
-    count("Artist", !existing);
-  }
-  const rows = await prisma.artist.findMany({ where: { nameEn: { in: FEATURED_ARTISTS } }, select: { id: true, nameEn: true } });
-  return FEATURED_ARTISTS.map((n) => rows.find((r) => r.nameEn === n)?.id).filter((v): v is string => !!v);
-}
-
-/* ─────────────────────────── media ─────────────────────────── */
-
-async function seedArtwork(uploaderId: string) {
-  const ids = new Map<string, string>();
-  const grain = grainTile();
-  for (const art of artworks()) {
-    const png = await sharp(Buffer.from(art.svg))
-      .composite([{ input: grain.data, raw: { width: grain.size, height: grain.size, channels: 4 }, tile: true, blend: "overlay" }])
-      .png()
-      .toBuffer();
-    const img = await processImage(png, `sample/${art.slug}`);
-    const existing = await prisma.media.findUnique({ where: { storageKey: img.storageKey }, select: { id: true } });
-    const file = { url: img.url, variants: img.variants, mimeType: img.mimeType, sizeBytes: img.sizeBytes, width: img.width, height: img.height, blurDataUrl: img.blurDataUrl };
-    const row = await prisma.media.upsert({
-      where: { storageKey: img.storageKey },
-      update: file, // files are regenerated; alt/caption edits are kept
-      create: { ...file, type: "IMAGE", storageKey: img.storageKey, alt: art.alt, credit: "Feta Awards (generated artwork)", tags: ["sample", "artwork", ...art.tags], isSample: true, uploadedById: uploaderId },
-    });
-    ids.set(art.slug, row.id);
-    count("Media (sample artwork)", !existing);
-  }
-  return ids;
-}
-
-/* ─────────────────────────── edition ─────────────────────────── */
-
-function currentYearEat(now: Date) {
-  return Number(new Intl.DateTimeFormat("en", { year: "numeric", timeZone: env.APP_TIMEZONE }).format(now));
-}
-
-/** Sample edition: genre categories, each honoring fictional sample artists (A-76). */
-async function seedEdition(now: Date, heroMediaId: string | undefined) {
-  const year = currentYearEat(now);
-  const existing = await prisma.awardEdition.findUnique({ where: { year } });
-  const edition =
-    existing ??
-    (await prisma.awardEdition.create({
-      data: { year, slug: String(year), nameEn: `Feta Awards ${year}`, nameAm: `ፈታ ሽልማቶች ${year}`, heroMediaId, status: "PUBLISHED", isSample: true },
-    }));
-  count("AwardEdition (sample)", !existing);
-
-  const honoreeIds = new Map<string, string>(); // "1:0" → id
-  for (const g of GENRES) {
-    const slug = slugify(g.nameEn);
-    let category = await prisma.awardCategory.findUnique({ where: { editionId_slug: { editionId: edition.id, slug } } });
-    count("AwardCategory (sample genre)", !category);
-    category ??= await prisma.awardCategory.create({
-      data: {
-        editionId: edition.id,
-        slug,
-        nameEn: g.nameEn,
-        nameAm: g.nameAm,
-        descriptionEn: "Sample genre. The organizers will replace it with the official list.",
-        icon: g.icon,
-        sortOrder: g.n,
-        status: "PUBLISHED",
-        isSample: true,
-      },
-    });
-    for (const [i, h] of honoreesFor(g).entries()) {
-      let artist = await prisma.artist.findUnique({ where: { slug: h.artistSlug }, select: { id: true } });
-      count("Artist (sample)", !artist);
-      artist ??= await prisma.artist.create({
-        data: { slug: h.artistSlug, nameEn: h.artistName, categories: ["MUSICIAN"], shortBioEn: "Fictional sample artist for demonstration.", status: "PUBLISHED", sortOrder: 1000, isSample: true },
-        select: { id: true },
-      });
-      let honoree = await prisma.nominee.findUnique({ where: { slug: h.slug } });
-      count("Honoree (sample)", !honoree);
-      honoree ??= await prisma.nominee.create({
-        data: {
-          categoryId: category.id,
-          artistId: artist.id,
-          slug: h.slug,
-          displayNameEn: h.artistName,
-          workTitleEn: h.workTitleEn,
-          blurbEn: SAMPLE_CITATION,
-          sortOrder: h.sortOrder,
-          status: "PUBLISHED",
-          isSample: true,
-        },
-      });
-      honoreeIds.set(`${g.n}:${i}`, honoree.id);
-    }
-  }
-  return { edition, honoreeIds };
-}
-
-/* ─────────────────────────── content ─────────────────────────── */
-
-async function seedVideos(editionId: string) {
-  for (const v of VIDEOS) {
-    const slug = slugify(v.title);
-    const existing = await prisma.video.findUnique({ where: { slug }, select: { id: true } });
-    if (!existing) await prisma.video.create({ data: { slug, titleEn: v.title, type: v.type, source: "NONE", editionId, status: "PUBLISHED", publishedAt: new Date(), isSample: true } });
-    count("Video (sample)", !existing);
-  }
-}
-
-async function seedAlbums(mediaIds: Map<string, string>, editionId: string) {
-  const arts = artworks();
-  for (const album of ALBUMS) {
-    const items = arts.filter((a) => a.album === album.slug);
-    const existing = await prisma.album.findUnique({ where: { slug: album.slug }, select: { id: true } });
-    if (!existing) {
-      await prisma.album.create({
-        data: {
-          slug: album.slug,
-          titleEn: album.titleEn,
-          descriptionEn: album.descriptionEn,
-          coverId: mediaIds.get(items[0]!.slug),
-          editionId,
-          status: "PUBLISHED",
-          isSample: true,
-          items: { create: items.map((a, i) => ({ mediaId: mediaIds.get(a.slug)!, sortOrder: i })) },
-        },
-      });
-    }
-    count("Album (sample)", !existing);
-  }
-}
-
-async function seedNews(authorId: string, editionId: string | null) {
+async function seedNews(authorId: string) {
   for (const n of NEWS) {
     const slug = slugify(n.title);
     const existing = await prisma.newsPost.findUnique({ where: { slug }, select: { id: true } });
     if (!existing) {
       await prisma.newsPost.create({
-        data: {
-          slug,
-          titleEn: n.title,
-          excerptEn: n.excerpt,
-          bodyEn: n.body,
-          tags: n.tags,
-          featured: n.featured,
-          status: n.status,
-          publishedAt: n.status === "PUBLISHED" ? new Date() : null,
-          editionId: n.isSample ? editionId : null,
-          isSample: n.isSample,
-          authorId,
-        },
+        data: { slug, titleEn: n.title, excerptEn: n.excerpt, bodyEn: n.body, tags: n.tags, featured: n.featured, status: n.status, publishedAt: n.status === "PUBLISHED" ? new Date() : null, authorId },
       });
     }
     count("NewsPost", !existing);
@@ -281,17 +110,18 @@ async function seedNews(authorId: string, editionId: string | null) {
 
 /* ─────────────────────────── settings ─────────────────────────── */
 
-async function seedSettings(o: { editionId: string | null; featuredNomineeIds: string[]; artistIds: string[]; posterId?: string; ogImageId?: string }) {
+/** Default site settings, created once; everything after that is edited in Site Settings. */
+async function seedSettings() {
   const data: SiteSettingsData = SiteSettingsSchema.parse({
     branding: { logoId: null },
-    hero: { titleEn: "FETA AWARDS", wordmark: "ፈታ", taglineEn: "Celebrating Ethiopian artists, genre by genre.", taglineAm: am.brand.tagline, videoId: null, posterId: o.posterId ?? null },
+    hero: { titleEn: "FETA AWARDS", wordmark: "ፈታ", taglineEn: "Celebrating Ethiopian artists, genre by genre.", taglineAm: am.brand.tagline, videoId: null, posterId: null },
     ticker: [],
-    currentEditionId: o.editionId,
-    featured: { nomineeIds: o.featuredNomineeIds, artistIds: o.artistIds },
+    currentEditionId: null,
+    featured: { nomineeIds: [], artistIds: [] },
     social: {},
     contact: { email: "" },
     sponsors: [],
-    seo: { title: "Feta Awards (ፈታ)", description: "Feta Awards recognizes Ethiopian artists across every genre, from Classical to Bati to Afrobeat.", ogImageId: o.ogImageId ?? null },
+    seo: { title: "Feta Awards (ፈታ)", description: "Feta Awards recognizes Ethiopian artists across every genre, from Classical to Bati to Afrobeat.", ogImageId: null },
     footer: {},
     pages: {
       about: { bodyEn: ABOUT, isTemplate: true },
@@ -304,54 +134,33 @@ async function seedSettings(o: { editionId: string | null; featuredNomineeIds: s
   if (!existing) {
     const { currentEditionId, ...json } = data;
     await prisma.siteSettings.create({ data: { id: 1, currentEditionId: currentEditionId ?? null, ...(json as unknown as Omit<Prisma.SiteSettingsCreateInput, "id" | "currentEditionId">) } });
-  } else if (!PROD) {
-    // Create-only, except re-link empty sample references (e.g. after "Remove sample data" + re-seed).
-    const hero = existing.hero as Record<string, unknown>;
-    const seo = existing.seo as Record<string, unknown>;
-    const featured = existing.featured as { nomineeIds?: string[]; artistIds?: string[] };
-    await prisma.siteSettings.update({
-      where: { id: 1 },
-      data: {
-        currentEditionId: existing.currentEditionId ?? data.currentEditionId ?? null,
-        hero: { ...hero, posterId: hero?.posterId || data.hero.posterId } as Prisma.InputJsonValue,
-        seo: { ...seo, ogImageId: seo?.ogImageId || data.seo.ogImageId } as Prisma.InputJsonValue,
-        featured: { nomineeIds: featured?.nomineeIds?.length ? featured.nomineeIds : data.featured.nomineeIds, artistIds: featured?.artistIds?.length ? featured.artistIds : data.featured.artistIds } as Prisma.InputJsonValue,
-      },
-    });
   }
   count("SiteSettings", !existing);
 }
 
 /* ─────────────────────────── summary ─────────────────────────── */
 
+/** Files of the old generated sample artwork (its rows were removed by the remove_sample_data migration). */
+async function removeSampleFiles() {
+  const local = getLocalStorage();
+  if (local) await rm(path.join(local.root, "sample"), { recursive: true, force: true });
+}
+
 async function summary() {
-  const [staff, artists, sampleArtists, editions, categories, honorees, media, videos, albums, news] = await Promise.all([
+  const [staff, artists, editions, categories, honorees, media, albums, news] = await Promise.all([
     prisma.user.count(),
-    prisma.artist.count({ where: { status: "PUBLISHED", isSample: false } }),
-    prisma.artist.count({ where: { isSample: true } }),
+    prisma.artist.count({ where: { status: "PUBLISHED" } }),
     prisma.awardEdition.count(),
     prisma.awardCategory.count(),
     prisma.nominee.count(),
     prisma.media.count(),
-    prisma.video.count(),
     prisma.album.count(),
     prisma.newsPost.count(),
   ]);
   console.log("\nSeed summary (this run)");
   console.table(tally);
   console.log("Database totals");
-  console.table({
-    Staff: staff,
-    "Artists (published)": artists,
-    "Sample artists": sampleArtists,
-    Editions: editions,
-    "Genre categories": categories,
-    Honorees: honorees,
-    Media: media,
-    Videos: videos,
-    Albums: albums,
-    "News posts": news,
-  });
+  console.table({ Staff: staff, "Artists (published)": artists, Editions: editions, "Genre categories": categories, Honorees: honorees, Media: media, Albums: albums, "News posts": news });
   console.log("Logins");
   console.table(logins);
   if (!PROD) console.log("Mail (dev, staff password resets only): http://localhost:8026");
@@ -359,24 +168,13 @@ async function summary() {
 
 async function main() {
   const started = Date.now();
-  const now = new Date();
   const hash = await hasher();
   const staff = await seedStaff(hash);
-  const artistIds = await seedArtists();
-
-  if (PROD) {
-    await seedSettings({ editionId: null, featuredNomineeIds: [], artistIds });
-  } else {
-    const media = await seedArtwork(staff.SUPER_ADMIN);
-    const ed = await seedEdition(now, media.get(HERO_POSTER));
-    await seedVideos(ed.edition.id);
-    await seedAlbums(media, ed.edition.id);
-    await seedNews(staff.SUPER_ADMIN, ed.edition.id);
-    const featuredNomineeIds = [1, 2, 3, 4].map((n) => ed.honoreeIds.get(`${n}:0`)!).filter(Boolean);
-    await seedSettings({ editionId: ed.edition.id, featuredNomineeIds, artistIds, posterId: media.get(HERO_POSTER), ogImageId: media.get(OG_IMAGE) });
-  }
+  await seedNews(staff.SUPER_ADMIN);
+  await removeSampleFiles();
+  await seedSettings();
   await summary();
-  console.log(`Done in ${((Date.now() - started) / 1000).toFixed(1)}s${PROD ? " (production: staff, settings and artists only)" : ""}`);
+  console.log(`Done in ${((Date.now() - started) / 1000).toFixed(1)}s`);
 }
 
 main()

@@ -6,7 +6,6 @@ import { connection } from "next/server";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Chip } from "@/components/brand/chip";
 import { TibebStrip } from "@/components/brand/tibeb";
-import { SampleNotice } from "@/components/awards/sample-notice";
 import { NomineeFallback } from "@/components/awards/work-fallback";
 import { MediaImage } from "@/components/site/media-image";
 import { SectionHeading } from "@/components/site/section-heading";
@@ -73,7 +72,6 @@ export default async function HonoreePage({ params }: PageProps<"/[locale]/honor
             <div className="min-w-0">
               <div className="flex flex-wrap gap-2">
                 {honoree.artist.isLegend ? <Chip variant="legend">{th("legend")}</Chip> : null}
-                {honoree.isSample ? <Chip variant="sample">{th("sample")}</Chip> : null}
               </div>
               <p className="mt-4 font-display text-[0.6875rem] font-bold tracking-[0.3em] text-gold uppercase">{th("recognizedIn", { genre, year: edition.year })}</p>
               <h1 className="mt-2 font-display text-h1 font-extrabold text-balance break-words">{name}</h1>
@@ -95,7 +93,6 @@ export default async function HonoreePage({ params }: PageProps<"/[locale]/honor
       </header>
 
       <div className="mx-auto max-w-6xl space-y-14 px-4 py-10 sm:px-6">
-        {honoree.isSample ? <SampleNotice /> : null}
         {honoree.blurbEn || honoree.blurbAm ? (
           <section aria-labelledby="citation-title" className="max-w-3xl">
             <SectionHeading id="citation-title" title={t("citation")} />

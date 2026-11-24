@@ -17,7 +17,6 @@ export async function listAlbums() {
       titleEn: true,
       titleAm: true,
       descriptionEn: true,
-      isSample: true,
       cover: { select: mediaSelect },
       items: { take: 1, orderBy: { sortOrder: "asc" }, select: { media: { select: mediaSelect } } },
       _count: { select: { items: true } },

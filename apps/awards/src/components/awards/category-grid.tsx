@@ -4,7 +4,7 @@ import { CategoryCard } from "./category-card";
 
 /** The genre categories of an edition, with honoree counts. */
 export async function CategoryGrid({ editionSlug, categories }: { editionSlug: string; categories: CategoryData[] }) {
-  const [tc, th, locale] = await Promise.all([getTranslations("category"), getTranslations("honoree"), getLocale()]);
+  const [tc, locale] = await Promise.all([getTranslations("category"), getLocale()]);
   const am = locale === "am";
   return (
     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -17,8 +17,6 @@ export async function CategoryGrid({ editionSlug, categories }: { editionSlug: s
             description={(am && c.descriptionAm) || c.descriptionEn}
             honoreeCountLabel={tc("honorees", { count: c._count.nominees })}
             href={`/awards/${editionSlug}/${c.slug}`}
-            sample={c.isSample}
-            sampleLabel={th("sample")}
           />
         </li>
       ))}

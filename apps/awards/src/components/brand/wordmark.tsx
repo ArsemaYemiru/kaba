@@ -1,23 +1,29 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
+import trophy from "./trophy.png";
 
 /**
- * Type-only logo: "ፈታ" in Ethiopic 900 with "FETA AWARDS" in Unbounded beneath,
- * and optionally the edition year in gold foil (spec §3.4).
+ * Logo: the gold microphone trophy beside "ፈታ" in Ethiopic 900 with "FETA AWARDS"
+ * in Unbounded beneath, and optionally the edition year in gold foil (spec §3.4).
+ * The hero shows the trophy above the type.
  */
 export function Wordmark({
   size = "sm",
   className,
   subtitle = true,
   year,
+  trophy: showTrophy = true,
 }: {
   size?: "sm" | "md" | "hero";
   className?: string;
   subtitle?: boolean;
   /** Edition year in gold foil (hero only). */
   year?: number | null;
+  /** The trophy mark (decorative: the type carries the name). */
+  trophy?: boolean;
 }) {
-  return (
-    <span className={cn("inline-flex flex-col items-center leading-none", className)}>
+  const type = (
+    <span className={cn("inline-flex flex-col items-center leading-none", !showTrophy && className)}>
       <span
         lang="am"
         className={cn(
@@ -51,6 +57,27 @@ export function Wordmark({
           {year}
         </span>
       ) : null}
+    </span>
+  );
+  if (!showTrophy) return type;
+  if (size === "hero") {
+    return (
+      <span className={cn("inline-flex flex-col items-center", className)}>
+        <Image
+          src={trophy}
+          alt=""
+          priority
+          sizes="(min-width: 640px) 112px, 80px"
+          className="mb-2 h-28 w-auto drop-shadow-[0_0_40px_rgba(255,184,0,0.35)] sm:h-40"
+        />
+        {type}
+      </span>
+    );
+  }
+  return (
+    <span className={cn("inline-flex items-center", size === "sm" ? "gap-1.5" : "gap-3", className)}>
+      <Image src={trophy} alt="" sizes={size === "sm" ? "24px" : "40px"} className={cn("w-auto shrink-0", size === "sm" ? "h-9" : "h-16")} />
+      {type}
     </span>
   );
 }

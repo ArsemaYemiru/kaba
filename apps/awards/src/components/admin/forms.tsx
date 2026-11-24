@@ -1,5 +1,6 @@
 "use client";
 
+import { copyText } from "@/lib/clipboard";
 import { Check, Copy, RefreshCw } from "lucide-react";
 import { useActionState, useState, useTransition } from "react";
 import { Field, FormMessage, PasswordField, Submit } from "@/components/auth/fields";
@@ -46,7 +47,7 @@ export function TwoFactorSetupForm() {
           <button
             type="button"
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => navigator.clipboard.writeText(s.secret!).then(() => setCopied(true))}
+            onClick={() => void copyText(s.secret!).then((ok) => setCopied(ok))}
           >
             {copied ? <Check className="size-3.5" aria-hidden="true" /> : <Copy className="size-3.5" aria-hidden="true" />}
             <span className="font-mono break-all">{s.secret}</span>

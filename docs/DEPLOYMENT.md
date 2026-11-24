@@ -94,7 +94,7 @@ If package access is restricted, give the repository's Actions access to those t
 
    The deployment only succeeds once `/api/health` is healthy and the running image matches the commit.
 
-## 4. Create the staff accounts (once, after the first deploy)
+## 4. Seed the staff accounts (after the first deploy; safe to re-run)
 
 ```bash
 cd /opt/kaba-prod
@@ -102,19 +102,19 @@ set -a; . ./.image.env; set +a
 docker compose --env-file .env -p kaba-prod -f docker-compose.production.yml run --rm migrator pnpm db:seed
 ```
 
-In production, the seed creates only the following:
-- the two staff accounts;
-- the published artist profiles;
+The seed only creates what is missing and never overwrites edits made in the admin:
+- the two staff accounts (it refuses default passwords);
+- the welcome news post;
 - default site settings.
 
-It creates no sample edition and no sample content. It refuses default passwords.
+It creates no artists, photos, editions or honorees: you add all of them in the admin. On deploy, the database migrations automatically remove leftover sample data and the 13 placeholder artist profiles the old seed created. A profile is kept if it already has a photo or an honor.
 
-Sign in at `http://13.140.175.12:3006/sign-in` with the email and password from `.env`, then change the password.
-Next, in the admin:
-1. Create the edition.
-2. Add its genre categories (Classical, Bati, Afrobeat…).
-3. Place artists into them and write their citations.
-4. Set the edition to **Announced**.
+Sign in at `http://13.140.175.12:3006/sign-in` with the email and password from `.env`; you are asked to choose a new password first.
+Then, in the admin:
+1. **Media Library:** drag in your photos. Large camera JPEGs are resized in the browser before upload (up to 3000px on the long edge), so 20 MB originals upload quickly, three at a time. Add alt text (what the photo shows) and captions.
+2. **Artists:** add each artist, pick at least one category (Singer, Musician…), choose a portrait from the Media Library and publish. **Delete** (in the editor, or select rows in the list) also removes that artist's honors.
+3. **Editions → Genre categories:** create the edition and its genres, then use **Add artists to this genre**, write citations, and set the edition to **Announced**.
+4. **Gallery:** create albums from the uploaded photos. **Site Settings:** pick the hero photo, share image and featured honorees.
 
 ## Operations
 

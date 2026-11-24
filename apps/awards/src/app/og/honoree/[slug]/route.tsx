@@ -15,6 +15,5 @@ export async function GET(_req: Request, { params }: RouteContext<"/og/honoree/[
     subtitle: `${h.category.nameEn}${h.workTitleEn ? ` · ${h.workTitleEn}` : ""}`,
     image: await mediaDataUrl(h.image ?? h.artist.portrait),
     fallback: h.displayNameEn.split(/\s+/).slice(0, 2).map((w) => w[0]!.toUpperCase()).join(""),
-    sample: h.isSample,
   });
 }

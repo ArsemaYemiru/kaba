@@ -32,7 +32,6 @@ export async function HonoreeCard({ honoree, genre, sizes = "(min-width: 1280px)
           </div>
           <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-surface via-surface/70 to-transparent pt-16" />
           <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
-            {honoree.isSample ? <Chip size="sm" variant="sample">{t("sample")}</Chip> : null}
             {honoree.artist.isLegend ? <Chip size="sm" variant="legend">{t("legend")}</Chip> : null}
           </div>
         </div>
@@ -46,7 +45,7 @@ export async function HonoreeCard({ honoree, genre, sizes = "(min-width: 1280px)
           ) : null}
           {work ? <p className="text-sm text-foreground/90">{t("featuredWork", { work })}</p> : null}
           {citation ? <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">{citation}</p> : null}
-          <span className="mt-auto pt-3 text-sm font-semibold text-gold group-hover:underline">{t("readCitation")}</span>
+          <span className="mt-auto pt-3 text-sm font-semibold text-gold group-hover:underline">{citation ? t("readCitation") : t("viewHonoree")}</span>
         </div>
       </Link>
     </article>

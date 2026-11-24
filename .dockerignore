@@ -12,3 +12,4 @@ apps/awards/storage
 **/*.tsbuildinfo
 docs
 apps/awards/tests
+apps/awards/media-import

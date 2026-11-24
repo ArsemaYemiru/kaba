@@ -1,5 +1,4 @@
 import { ArrowRight } from "lucide-react";
-import { Chip } from "@/components/brand/chip";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { CategoryIcon } from "./category-icons";
@@ -11,13 +10,11 @@ export type CategoryCardProps = {
   description?: string | null;
   honoreeCountLabel: string;
   href: string;
-  sample?: boolean;
-  sampleLabel?: string;
   className?: string;
 };
 
 /** Genre card (A-76): icon, EN/AM name, short description, honoree count. */
-export function CategoryCard({ name, nameAm, icon, description, honoreeCountLabel, href, sample, sampleLabel = "Sample", className }: CategoryCardProps) {
+export function CategoryCard({ name, nameAm, icon, description, honoreeCountLabel, href, className }: CategoryCardProps) {
   return (
     <Link
       href={href}
@@ -31,7 +28,6 @@ export function CategoryCard({ name, nameAm, icon, description, honoreeCountLabe
         <span className="flex size-12 items-center justify-center rounded-xl border border-gold/30 bg-bg/60 text-gold">
           <CategoryIcon name={icon} className="size-6" />
         </span>
-        {sample ? <Chip size="sm" variant="sample">{sampleLabel}</Chip> : null}
       </div>
       <h3 className="relative mt-5 font-display text-lg leading-tight font-bold text-balance">{name}</h3>
       {nameAm ? (

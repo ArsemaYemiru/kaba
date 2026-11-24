@@ -56,7 +56,7 @@ async function EditionsPageContent() {
                     <Link href={`/admin/editions/${e.id}`} className="font-medium hover:text-gold">
                       {e.nameEn}
                     </Link>
-                    {e.isSample ? <Chip size="sm" variant="muted" className="ml-2">Sample</Chip> : null}
+                    
                   </td>
                   <td className="px-4 py-3 text-xs tabular-nums">{d(e.ceremonyAt)}</td>
                   <td className="px-4 py-3">

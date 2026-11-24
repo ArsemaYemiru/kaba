@@ -3,7 +3,7 @@
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { ImagePlus } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useFieldArray, useForm, useFormContext, useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { deleteAlbum, saveAlbum } from "@/server/actions/admin/albums";
@@ -99,6 +99,7 @@ function AlbumItems() {
   const { media, remember } = useMediaLookup();
   const [open, setOpen] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  const dndId = useId(); // stable ids: no SSR hydration mismatch in aria-describedby
   const ids = fields.map((f) => f.id);
   const onDragEnd = (e: DragEndEvent) => {
     if (!e.over || e.active.id === e.over.id) return;
@@ -110,7 +111,7 @@ function AlbumItems() {
         <ImagePlus /> Add photos
       </Button>
       {fields.length ? (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={ids} strategy={rectSortingStrategy}>
             <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {fields.map((f, i) => (

@@ -31,7 +31,7 @@ export function VideoGrid({ videos, className, layout = "grid" }: { videos: Vide
       >
         {videos.map((v) => (
           <li key={v.id} className={cn(layout === "row" && "w-[82%] shrink-0 snap-start sm:w-auto")}>
-            <VideoCard video={v} onOpen={() => setOpen(v)} typeLabel={t(`videos.types.${v.type}`)} soonLabel={t("common.comingSoon")} sampleLabel={t("common.sample")} playLabel={t("common.play", { title: v.titleEn })} />
+            <VideoCard video={v} onOpen={() => setOpen(v)} typeLabel={t(`videos.types.${v.type}`)} soonLabel={t("common.comingSoon")} playLabel={t("common.play", { title: v.titleEn })} />
           </li>
         ))}
       </ul>
@@ -40,7 +40,7 @@ export function VideoGrid({ videos, className, layout = "grid" }: { videos: Vide
   );
 }
 
-function VideoCard({ video, onOpen, typeLabel, soonLabel, sampleLabel, playLabel }: { video: VideoCardData; onOpen: () => void; typeLabel: string; soonLabel: string; sampleLabel: string; playLabel: string }) {
+function VideoCard({ video, onOpen, typeLabel, soonLabel, playLabel }: { video: VideoCardData; onOpen: () => void; typeLabel: string; soonLabel: string; playLabel: string }) {
   const yt = video.source === "YOUTUBE" ? youtubeId(video.youtubeUrl) : null;
   const poster = video.poster?.url ?? (yt ? `https://i.ytimg.com/vi_webp/${yt}/hqdefault.webp` : null);
   const g = gradientFor(video.titleEn);
@@ -75,7 +75,6 @@ function VideoCard({ video, onOpen, typeLabel, soonLabel, sampleLabel, playLabel
         <div className="absolute top-3 left-3 flex gap-1.5">
           <Chip size="sm">{typeLabel}</Chip>
           {soon ? <Chip size="sm" variant="muted">{soonLabel}</Chip> : null}
-          {video.isSample ? <Chip size="sm" variant="sample">{sampleLabel}</Chip> : null}
         </div>
       </div>
       <div className="p-4">

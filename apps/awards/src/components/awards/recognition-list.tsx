@@ -1,5 +1,4 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { Chip } from "@/components/brand/chip";
 import { Link } from "@/i18n/navigation";
 
 type Recognition = {
@@ -8,7 +7,6 @@ type Recognition = {
   workTitleAm: string | null;
   blurbEn: string | null;
   blurbAm: string | null;
-  isSample: boolean;
   category: { slug: string; nameEn: string; nameAm: string | null; edition: { slug: string; year: number } };
 };
 
@@ -31,7 +29,6 @@ export async function RecognitionList({ recognitions }: { recognitions: Recognit
                 {work ? <span className="block text-sm text-foreground/90">{t("featuredWork", { work })}</span> : null}
                 {citation ? <span className="mt-1 line-clamp-2 block text-sm text-muted-foreground">{citation}</span> : null}
               </span>
-              {r.isSample ? <Chip size="sm" variant="sample">{t("sample")}</Chip> : null}
             </Link>
           </li>
         );

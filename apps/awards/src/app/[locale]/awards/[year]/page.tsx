@@ -7,7 +7,6 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ComingSoon } from "@/components/brand/coming-soon";
 import { CategoryGrid } from "@/components/awards/category-grid";
 import { KeyDates } from "@/components/awards/key-dates";
-import { SampleNotice } from "@/components/awards/sample-notice";
 import { PageHeader, SectionHeading } from "@/components/site/section-heading";
 import { getEdition } from "@/server/queries/awards";
 import { JsonLd } from "@/components/site/json-ld";
@@ -46,7 +45,6 @@ export default async function EditionPage({ params }: PageProps<"/[locale]/award
         </p>
       </PageHeader>
       <div className="mx-auto max-w-7xl space-y-14 px-4 py-10 sm:px-6 sm:py-12">
-        {edition.isSample ? <SampleNotice /> : null}
         {categories.length ? (
           <section aria-labelledby="categories-title">
             <SectionHeading id="categories-title" title={t("categories")} />

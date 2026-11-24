@@ -30,3 +30,7 @@ apps/awards/test-results
 apps/awards/playwright-report
 apps/awards/blob-report
 
+
+# Local folder for original photos (upload them in the admin Media Library)
+apps/awards/media-import/
+apps/awards/tests/e2e/.fixture-settings.json

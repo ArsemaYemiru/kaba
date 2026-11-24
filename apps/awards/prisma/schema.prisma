@@ -71,7 +71,6 @@ model User {
   isActive           Boolean   @default(true)
   lastLoginAt        DateTime?
   mustChangePassword Boolean   @default(false)
-  isSample           Boolean   @default(false)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -176,7 +175,6 @@ model Media {
   caption      String?
   credit       String?
   tags         String[]
-  isSample     Boolean   @default(false)
   uploadedById String?
   uploadedBy   User?     @relation("MediaUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
   createdAt    DateTime  @default(now())
@@ -227,7 +225,6 @@ model Artist {
   seoTitle       String?
   seoDescription String?
   /// Fictional sample artist (dev seed only); removed by "Remove sample data".
-  isSample       Boolean          @default(false)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -263,7 +260,6 @@ model AwardEdition {
   heroMediaId      String?
   heroMedia        Media?    @relation(fields: [heroMediaId], references: [id], onDelete: SetNull)
   status           Status    @default(DRAFT)
-  isSample         Boolean   @default(false)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -287,7 +283,6 @@ model AwardCategory {
   icon          String       @default("trophy")
   sortOrder     Int          @default(0)
   status        Status       @default(DRAFT)
-  isSample      Boolean      @default(false)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -316,7 +311,6 @@ model Nominee {
   youtubeUrl    String?
   sortOrder     Int           @default(0)
   status        Status        @default(DRAFT)
-  isSample      Boolean       @default(false)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -347,7 +341,6 @@ model Video {
   featured    Boolean       @default(false)
   status      Status        @default(DRAFT)
   publishedAt DateTime?
-  isSample    Boolean       @default(false)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -389,7 +382,6 @@ model Album {
   editionId     String?
   edition       AwardEdition? @relation(fields: [editionId], references: [id], onDelete: SetNull)
   status        Status        @default(DRAFT)
-  isSample      Boolean       @default(false)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   items         AlbumItem[]
@@ -428,7 +420,6 @@ model NewsPost {
   publishedAt DateTime?
   authorId    String?
   author      User?         @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  isSample    Boolean       @default(false)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 

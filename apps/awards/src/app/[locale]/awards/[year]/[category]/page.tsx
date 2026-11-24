@@ -9,7 +9,6 @@ import { ComingSoon } from "@/components/brand/coming-soon";
 import { Reveal } from "@/components/brand/reveal";
 import { CategoryIcon } from "@/components/awards/category-icons";
 import { HonoreeCard } from "@/components/awards/honoree-card";
-import { SampleNotice } from "@/components/awards/sample-notice";
 import { SectionHeading } from "@/components/site/section-heading";
 import { Link } from "@/i18n/navigation";
 import { getCategory, getEdition } from "@/server/queries/awards";
@@ -35,7 +34,7 @@ export default async function CategoryPage({ params }: PageProps<"/[locale]/awar
   const [data, full] = await Promise.all([getCategory(year, slug), getEdition(year)]);
   if (!data) notFound();
   const { edition, category, honorees } = data;
-  const [t, tc, th] = await Promise.all([getTranslations("awards"), getTranslations("category"), getTranslations("honoree")]);
+  const [t, tc] = await Promise.all([getTranslations("awards"), getTranslations("category")]);
   const others = (full?.categories ?? []).filter((c) => c.slug !== category.slug);
   const am = locale === "am";
   const name = (am && category.nameAm) || category.nameEn;
@@ -66,12 +65,10 @@ export default async function CategoryPage({ params }: PageProps<"/[locale]/awar
           {description ? <p className="mt-4 max-w-2xl text-pretty text-muted-foreground">{description}</p> : null}
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <Chip variant="muted">{tc("honorees", { count: honorees.length })}</Chip>
-            {category.isSample ? <Chip variant="sample">{th("sample")}</Chip> : null}
           </div>
         </div>
       </header>
       <div className="mx-auto max-w-7xl space-y-14 px-4 py-10 sm:px-6 sm:py-12">
-        {category.isSample ? <SampleNotice /> : null}
         <section aria-labelledby="honorees-title">
           <h2 id="honorees-title" className="sr-only">
             {t("honorees")}

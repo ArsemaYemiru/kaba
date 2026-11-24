@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Loader2, Plus, Save, Trash2, TriangleAlert, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader2, Plus, Save, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { FormProvider, useFieldArray, useForm, useFormContext, useWatch, type FieldValues } from "react-hook-form";
@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { SiteSettingsData } from "@/schemas/settings";
 import type { PickerMedia } from "@/server/actions/admin/media";
-import { removeSampleData, saveSettingsSection } from "@/server/actions/admin/settings";
+import { saveSettingsSection } from "@/server/actions/admin/settings";
 import { SelectField, TextAreaField, TextField } from "../fields";
 import { RichTextField } from "../rich-text";
 import { MediaProvider } from "../media-context";
@@ -162,8 +162,6 @@ export function SettingsEditor({ settings, media, editions, honorees, artists }:
             <FaqRepeater />
           </SectionForm>
         </div>
-
-        <DangerZone />
       </div>
     </MediaProvider>
   );
@@ -235,43 +233,3 @@ function FaqRepeater() {
   );
 }
 
-function DangerZone() {
-  const router = useRouter();
-  const [text, setText] = useState("");
-  const [pending, start] = useTransition();
-  return (
-    <section id="danger" aria-labelledby="danger-title" className="scroll-mt-20 rounded-lg border border-red/50 bg-red/5 p-5">
-      <h2 id="danger-title" className="flex items-center gap-2 font-display text-sm font-bold text-red">
-        <TriangleAlert className="size-4" /> Danger zone
-      </h2>
-      <p className="mt-1 text-sm">
-        <strong>Remove sample data</strong> deletes everything flagged as sample: the sample edition with its genres and honorees, the fictional
-        sample artists, and the sample media, videos, albums and draft news. Real artists, staff, the welcome post and these settings stay. This
-        can&apos;t be undone.
-      </p>
-      <label className="mt-3 flex flex-col gap-1 text-xs font-semibold">
-        Type REMOVE SAMPLE DATA to confirm
-        <input value={text} onChange={(e) => setText(e.target.value)} className="h-9 max-w-xs rounded-md border border-line bg-bg px-3 text-sm" />
-      </label>
-      <Button
-        type="button"
-        variant="destructive"
-        size="sm"
-        className="mt-3"
-        disabled={text !== "REMOVE SAMPLE DATA" || pending}
-        onClick={() =>
-          start(async () => {
-            const r = await removeSampleData({ confirm: text });
-            if (r.ok) {
-              toast.success(`Removed: ${Object.entries(r.removed).filter(([, n]) => n).map(([k, n]) => `${n} ${k}`).join(", ") || "nothing"}`);
-              setText("");
-              router.refresh();
-            } else toast.error(r.error);
-          })
-        }
-      >
-        {pending ? <Loader2 className="animate-spin" /> : <Trash2 />} Remove sample data
-      </Button>
-    </section>
-  );
-}
