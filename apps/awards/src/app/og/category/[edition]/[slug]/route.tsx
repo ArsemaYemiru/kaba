@@ -8,5 +8,5 @@ export async function GET(_req: Request, { params }: RouteContext<"/og/category/
   const c = await ogCategory(edition, slug);
   if (!c) return new Response("Not found", { status: 404 });
   const n = c._count.nominees;
-  return ogCard({ kicker: `Feta Awards ${c.edition.year}`, title: c.nameEn, titleAm: c.nameAm, subtitle: n ? `Honoring ${n} artist${n === 1 ? "" : "s"}` : "Celebrating Ethiopian artists", fallback: "ፈታ", sample: c.isSample });
+  return ogCard({ kicker: `Feta Awards ${c.edition.year}`, title: c.nameEn, titleAm: c.nameAm, subtitle: n ? `Honoring ${n} artist${n === 1 ? "" : "s"}` : "Celebrating Ethiopian artists", fallback: "ፈታ" });
 }

@@ -73,15 +73,37 @@ export async function bulkArtists(input: unknown): Promise<BulkResult> {
   const a = await authorize();
   if (!a.ok) return a;
   const { ids, op } = BulkSchema.parse(input);
-  const rows = await prisma.artist.findMany({ where: { id: { in: ids } }, select: { id: true, slug: true, nameEn: true } });
-  if (op === "delete") await prisma.artist.deleteMany({ where: { id: { in: ids } } });
-  else await prisma.artist.updateMany({ where: { id: { in: ids } }, data: { status: op === "publish" ? "PUBLISHED" : op === "unpublish" ? "DRAFT" : "ARCHIVED" } });
-  invalidate(TAGS_FOR.artist(...rows.map((r) => r.slug)));
+  const rows = await prisma.artist.findMany({ where: { id: { in: ids } }, select: { id: true, slug: true, nameEn: true, honors: { select: { id: true, slug: true } } } });
+  const honors = rows.flatMap((r) => r.honors);
+  if (op === "delete") {
+    // Their honors (one per genre) go with them (FK cascade); drop both from the home page picks.
+    await prisma.$transaction(async (tx) => {
+      await tx.artist.deleteMany({ where: { id: { in: ids } } });
+      const settings = await tx.siteSettings.findUnique({ where: { id: 1 }, select: { featured: true } });
+      const featured = settings?.featured as { nomineeIds?: string[]; artistIds?: string[] } | undefined;
+      if (featured) {
+        const goneArtists = new Set(ids);
+        const goneHonors = new Set(honors.map((h) => h.id));
+        await tx.siteSettings.update({
+          where: { id: 1 },
+          data: {
+            featured: {
+              ...featured,
+              artistIds: (featured.artistIds ?? []).filter((x) => !goneArtists.has(x)),
+              nomineeIds: (featured.nomineeIds ?? []).filter((x) => !goneHonors.has(x)),
+            } as Prisma.InputJsonValue,
+          },
+        });
+      }
+    });
+  } else await prisma.artist.updateMany({ where: { id: { in: ids } }, data: { status: op === "publish" ? "PUBLISHED" : op === "unpublish" ? "DRAFT" : "ARCHIVED" } });
+  invalidate([...TAGS_FOR.artist(...rows.map((r) => r.slug)), ...TAGS_FOR.honoree(...honors.map((h) => h.slug)), ...TAGS_FOR.settings()]);
   for (const r of rows) await logActivity({ userId: a.user.id, action: op === "archive" ? "unpublish" : op, entityType: "Artist", entityId: r.id, meta: { label: r.nameEn } });
   return { ok: true, count: rows.length };
 }
 
 export async function deleteArtist(id: string) {
-  await authorize();
+  const a = await authorize();
+  if (!a.ok) return a;
   return bulkArtists({ ids: [z.string().min(1).parse(id)], op: "delete" });
 }

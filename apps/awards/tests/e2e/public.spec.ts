@@ -1,13 +1,16 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
+import { FX, GENRE_URL, HONOREE_URL } from "./fixture";
 import { gotoReady, horizontalOverflow, waitHydrated } from "./helpers";
 
 /**
- * Public site on the seeded sample edition (A-76: recognition, no voting).
- * Slugs come from the seed: edition = current EAT year, genre 1 = classical,
- * its first honoree = sample-artist-1a-sample.
+ * Public site on the e2e fixture content (fixture.ts: edition 2097, genre
+ * "E2E Music" with three honorees, an "E2E Legend" artist and an album).
  */
-const year = () => new Intl.DateTimeFormat("en", { year: "numeric", timeZone: "Africa/Addis_Ababa" }).format(new Date());
-const HONOREE = "/honorees/sample-artist-1a-sample";
+const year = () => FX.year;
+const GENRE = GENRE_URL;
+const HONOREE = HONOREE_URL;
+const [ONE, TWO, THREE] = FX.honorees;
+const LEGEND = `/artists/${FX.legend.slug}`;
 
 async function firstHref(request: APIRequestContext, prefix: string) {
   const items = (await (await request.get("/api/search")).json()) as { href: string }[];
@@ -17,14 +20,14 @@ async function firstHref(request: APIRequestContext, prefix: string) {
 test("every public route answers 200", async ({ request }) => {
   const y = year();
   const artist = await firstHref(request, "/artists/");
-  for (const url of ["/", `/awards/${y}`, `/awards/${y}/classical`, "/awards/archive", HONOREE, "/artists", artist, "/videos", "/gallery", "/gallery/red-carpet", "/news", "/about", "/privacy", "/terms", "/sign-in", "/sitemap.xml", "/robots.txt"]) {
+  for (const url of ["/", `/awards/${y}`, GENRE, "/awards/archive", HONOREE, "/artists", artist, "/videos", "/gallery", `/gallery/${FX.album.slug}`, "/news", "/about", "/privacy", "/terms", "/sign-in", "/sitemap.xml", "/robots.txt"]) {
     const res = await request.get(url);
     expect(res.status(), url).toBe(200);
   }
 });
 
 test("voting and member pages are gone; missing and draft records are real 404s; /awards redirects", async ({ request }) => {
-  for (const url of ["/vote", "/sign-up", "/verify", "/account", "/account/ballot", "/rules", `/awards/${year()}/winners`, "/nominees/sample-nominee-1a", "/api/vote", "/api/ballot-session"]) {
+  for (const url of ["/vote", "/sign-up", "/verify", "/account", "/account/ballot", "/rules", `/awards/${year()}/winners`, "/nominees/sample-nominee-1a", "/honorees/sample-artist-1a-sample", "/artists/sample-artist-1a", "/api/vote", "/api/ballot-session"]) {
     const res = await request.get(url, { maxRedirects: 0 });
     expect(res.status(), url).toBe(404);
   }
@@ -34,46 +37,53 @@ test("voting and member pages are gone; missing and draft records are real 404s;
   }
   const res = await request.get("/awards", { maxRedirects: 0 });
   expect(res.status()).toBe(307);
-  expect(res.headers().location).toMatch(new RegExp(`/awards/${year()}$`));
+  expect(res.headers().location).toMatch(new RegExp(`/awards/${FX.year}$`));
 });
 
-test("home: genres, featured honorees, sample notice; no vote or sign-in controls", async ({ page }) => {
+test("home: genres, featured honorees, no sample data; no vote or sign-in controls", async ({ page }) => {
   await gotoReady(page, "/");
   await expect(page.getByRole("heading", { name: "The genres" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Featured honorees" })).toBeVisible();
-  await expect(page.getByText("Sample data: fictional artists").first()).toBeVisible();
+  await expect(page.locator("main").getByText(ONE.name).first()).toBeVisible();
+  await expect(page.getByText(/sample/i)).toHaveCount(0);
   await expect(page.getByRole("link", { name: "See the honorees" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: /^Vote/ })).toHaveCount(0);
   await expect(page.locator("header").getByRole("link", { name: "Sign in" })).toHaveCount(0);
 });
 
-test("genre page lists every honoree equally, with citations", async ({ page }) => {
-  await gotoReady(page, `/awards/${year()}/classical`);
-  await expect(page.getByRole("heading", { level: 1, name: "Classical" })).toBeVisible();
-  await expect(page.locator("main article")).toHaveCount(4);
-  await expect(page.getByText("4 honorees")).toBeVisible();
-  await expect(page.getByText("Read the citation").first()).toBeVisible();
+test("genre page lists every honoree equally", async ({ page }) => {
+  await gotoReady(page, GENRE);
+  await expect(page.getByRole("heading", { level: 1, name: FX.genre.name })).toBeVisible();
+  await expect(page.locator("main article")).toHaveCount(3);
+  await expect(page.getByText("3 honorees")).toBeVisible();
+  for (const name of [ONE.name, TWO.name, THREE.name]) await expect(page.locator("main article").getByText(name, { exact: true })).toBeVisible();
   await expect(page.getByText(/winner/i)).toHaveCount(0);
 });
 
-test("honoree page: genre, citation, featured work, artist profile link, share", async ({ page }) => {
+test("honoree page: portrait, genre, citation, featured work, artist profile link", async ({ page }) => {
   await gotoReady(page, HONOREE);
-  await expect(page.getByRole("heading", { level: 1, name: "Sample Artist 1A" })).toBeVisible();
-  await expect(page.getByText(`Classical · ${year()}`)).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Citation" })).toBeVisible();
-  await expect(page.getByText("Featured work: Sample Song 1A")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: ONE.name })).toBeVisible();
+  await expect(page.getByText(`${FX.genre.name} · ${year()}`)).toBeVisible();
+  await expect(page.getByText(ONE.citation!)).toBeVisible();
+  await expect(page.getByText(`Featured work: ${ONE.work}`)).toBeVisible();
   await page.getByRole("link", { name: "Artist profile" }).click();
-  await expect(page).toHaveURL(/\/artists\/sample-artist-1a$/);
+  await expect(page).toHaveURL(new RegExp(`/artists/${ONE.slug}$`));
 });
 
-test("artist profile lists the genres the artist is recognized in; real people are never honored by the sample", async ({ page }) => {
-  await gotoReady(page, "/artists/sample-artist-1a");
+test("honoree cards say 'View honoree' until a citation is written", async ({ page }) => {
+  await gotoReady(page, GENRE);
+  await expect(page.locator("main article").filter({ hasText: ONE.name }).getByText("Read the citation")).toBeVisible();
+  await expect(page.locator("main article").filter({ hasText: TWO.name }).getByText("View honoree")).toBeVisible();
+});
+
+test("artist profile lists the genres the artist is recognized in", async ({ page }) => {
+  await gotoReady(page, `/artists/${ONE.slug}`);
   const tab = page.getByRole("tab", { name: "Feta Awards" });
   await waitHydrated(tab);
   await tab.click();
-  await expect(page.getByRole("link", { name: new RegExp(`Classical · ${year()}`) })).toBeVisible();
+  await expect(page.getByRole("link", { name: new RegExp(`${FX.genre.name} · ${year()}`) })).toBeVisible();
 
-  await gotoReady(page, "/artists/mulatu-astatke");
+  await gotoReady(page, LEGEND);
   await expect(page.getByText("Legend", { exact: true }).first()).toBeVisible();
   const tab2 = page.getByRole("tab", { name: "Feta Awards" });
   await waitHydrated(tab2);
@@ -86,14 +96,15 @@ test("artists directory filters honored artists", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Feta Awards honorees" })).toHaveAttribute("aria-current", "true");
   // The legends rail above the directory isn't filtered; the directory grid is.
   const grid = page.locator("main ul.cv-auto");
-  await expect(grid.getByText("Sample Artist 1A")).toBeVisible();
-  await expect(grid.getByText("Mulatu Astatke")).toHaveCount(0);
+  await expect(grid.getByText(ONE.name)).toBeVisible();
+  await expect(grid.getByText(FX.legend.name)).toHaveCount(0);
 });
 
-test("videos filter by type", async ({ page }) => {
-  await gotoReady(page, "/videos?type=RED_CARPET");
-  await expect(page.getByRole("link", { name: "Red carpet" })).toHaveAttribute("aria-current", /.+/);
-  await expect(page.getByRole("button", { name: /^Play / })).toHaveCount(1);
+test("gallery: albums show their uploaded photos", async ({ page }) => {
+  await gotoReady(page, "/gallery");
+  await expect(page.getByRole("link", { name: new RegExp(FX.album.title) }).first()).toBeVisible();
+  await gotoReady(page, `/gallery/${FX.album.slug}`);
+  await expect(page.getByRole("img", { name: new RegExp(FX.album.alt) }).first()).toBeVisible();
 });
 
 test("command palette finds honorees, artists and news", async ({ page }) => {
@@ -101,17 +112,17 @@ test("command palette finds honorees, artists and news", async ({ page }) => {
   const button = page.getByRole("button", { name: "Search honorees, artists and news" });
   await waitHydrated(button);
   await button.click();
-  await page.getByPlaceholder("Search honorees, artists, news…").fill("sample song 1a");
-  await expect(page.getByRole("option").first()).toContainText("Sample Artist 1A");
+  await page.getByPlaceholder("Search honorees, artists, news…").fill(ONE.name.toLowerCase());
+  await expect(page.getByRole("option").first()).toContainText(ONE.name);
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/honorees\/sample-artist-1a-sample$/);
+  await expect(page).toHaveURL(new RegExp(`/(honorees|artists)/${ONE.slug}`));
 });
 
 for (const width of [360, 390, 1440]) {
   test(`no horizontal overflow on key pages @ ${width}px`, async ({ page }) => {
     test.setTimeout(60_000);
     await page.setViewportSize({ width, height: 900 });
-    for (const url of ["/", `/awards/${year()}`, `/awards/${year()}/classical`, HONOREE, "/artists", "/artists/mulatu-astatke", "/gallery"]) {
+    for (const url of ["/", `/awards/${year()}`, GENRE, HONOREE, "/artists", LEGEND, "/gallery"]) {
       await gotoReady(page, url);
       expect(await horizontalOverflow(page), `${url} overflow`).toBeLessThanOrEqual(0);
     }
@@ -130,18 +141,19 @@ test("SEO and security: metadata in <head>, share images, JSON-LD, headers", asy
   const img = await request.get(new URL(og!).pathname);
   expect(img.status()).toBe(200);
   expect(img.headers()["content-type"]).toBe("image/png");
-  for (const u of ["/og/site", "/og/artist/mulatu-astatke", `/og/category/${year()}/classical`, `/og/edition/${year()}`]) expect((await request.get(u)).status(), u).toBe(200);
+  for (const u of ["/og/site", `/og/artist/${FX.legend.slug}`, `/og/category/${FX.year}/${FX.genre.slug}`, `/og/edition/${year()}`]) expect((await request.get(u)).status(), u).toBe(200);
   expect((await request.get("/og/honoree/no-such-honoree")).status()).toBe(404);
 
   const home = await (await request.get("/")).text();
   const ld = [...home.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/g)].map((m) => JSON.parse(m[1]!));
   expect(ld.map((x) => x["@type"])).toContain("Organization");
-  const artist = await (await request.get("/artists/mulatu-astatke")).text();
+  const artist = await (await request.get(LEGEND)).text();
   expect(artist).toContain('"@type":"Person"');
 
   const sitemap = await (await request.get("/sitemap.xml")).text();
-  expect(sitemap).toContain(`/awards/${year()}/classical`);
-  expect(sitemap).toContain("/honorees/sample-artist-1a-sample");
+  expect(sitemap).toContain(GENRE);
+  expect(sitemap).toContain(HONOREE);
+  expect(sitemap).not.toContain("sample");
   expect(sitemap).not.toMatch(/\/vote|\/rules|\/nominees\//);
 
   const h = res.headers();

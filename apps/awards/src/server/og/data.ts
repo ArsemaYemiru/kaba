@@ -12,7 +12,6 @@ export function ogHonoree(slug: string) {
       displayNameEn: true,
       displayNameAm: true,
       workTitleEn: true,
-      isSample: true,
       image: mediaSel,
       artist: { select: { portrait: mediaSel } },
       category: { select: { nameEn: true, edition: { select: { year: true } } } },
@@ -23,12 +22,12 @@ export function ogHonoree(slug: string) {
 export function ogCategory(edition: string, slug: string) {
   return prisma.awardCategory.findFirst({
     where: { slug, ...published, edition: { slug: edition, ...published } },
-    select: { nameEn: true, nameAm: true, isSample: true, edition: { select: { year: true } }, _count: { select: { nominees: { where: { ...published, artist: published } } } } },
+    select: { nameEn: true, nameAm: true, edition: { select: { year: true } }, _count: { select: { nominees: { where: { ...published, artist: published } } } } },
   });
 }
 
 export function ogEdition(slug: string) {
-  return prisma.awardEdition.findFirst({ where: { slug, ...published }, select: { year: true, nameEn: true, nameAm: true, isSample: true, heroMedia: mediaSel, _count: { select: { categories: { where: published } } } } });
+  return prisma.awardEdition.findFirst({ where: { slug, ...published }, select: { year: true, nameEn: true, nameAm: true, heroMedia: mediaSel, _count: { select: { categories: { where: published } } } } });
 }
 
 export function ogArtist(slug: string) {
@@ -36,5 +35,5 @@ export function ogArtist(slug: string) {
 }
 
 export function ogNews(slug: string) {
-  return prisma.newsPost.findFirst({ where: { slug, ...published, publishedAt: { lte: new Date() } }, select: { titleEn: true, titleAm: true, excerptEn: true, isSample: true, cover: mediaSel } });
+  return prisma.newsPost.findFirst({ where: { slug, ...published, publishedAt: { lte: new Date() } }, select: { titleEn: true, titleAm: true, excerptEn: true, cover: mediaSel } });
 }

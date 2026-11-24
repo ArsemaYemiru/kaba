@@ -66,7 +66,7 @@ export async function listAlbumsAdmin(p: ListParams) {
       orderBy,
       skip: p.skip,
       take: p.take,
-      select: { id: true, slug: true, titleEn: true, status: true, isSample: true, updatedAt: true, cover: thumb, _count: { select: { items: true } } },
+      select: { id: true, slug: true, titleEn: true, status: true, updatedAt: true, cover: thumb, _count: { select: { items: true } } },
     }),
     prisma.album.count({ where }),
   ]);
@@ -85,7 +85,7 @@ export async function listNewsAdmin(p: ListParams) {
       orderBy,
       skip: p.skip,
       take: p.take,
-      select: { id: true, slug: true, titleEn: true, status: true, featured: true, isSample: true, publishedAt: true, updatedAt: true, tags: true, cover: thumb, author: { select: { name: true } } },
+      select: { id: true, slug: true, titleEn: true, status: true, featured: true, publishedAt: true, updatedAt: true, tags: true, cover: thumb, author: { select: { name: true } } },
     }),
     prisma.newsPost.count({ where }),
   ]);
@@ -99,8 +99,8 @@ export async function artistOptions() {
 }
 /** Editions for "Edition" selects, newest first. */
 export async function editionOptions() {
-  const rows = await prisma.awardEdition.findMany({ orderBy: { year: "desc" }, select: { id: true, year: true, nameEn: true, isSample: true } });
-  return rows.map((e) => ({ id: e.id, label: `${e.nameEn}${e.isSample ? " (sample)" : ""}` }));
+  const rows = await prisma.awardEdition.findMany({ orderBy: { year: "desc" }, select: { id: true, year: true, nameEn: true } });
+  return rows.map((e) => ({ id: e.id, label: e.nameEn }));
 }
 /** Honorees for pickers: "Artist · Genre · Year". */
 export async function honoreeOptions() {

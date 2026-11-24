@@ -6,8 +6,6 @@ import { logActivity } from "@/lib/activity";
 import { authorize, type Denied } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { invalidate, TAGS_FOR } from "@/lib/revalidate";
-import { getStorage } from "@/lib/storage";
-import { removeSampleRows } from "@/server/admin/sample-data";
 import { SiteSettingsSchema, type SiteSettingsData } from "@/schemas/settings";
 import { sanitizeRichText } from "@/lib/sanitize";
 
@@ -44,28 +42,4 @@ export async function saveSettingsSection(input: unknown): Promise<SettingsResul
   invalidate(TAGS_FOR.settings());
   await logActivity({ userId: auth.user.id, action: "update", entityType: "SiteSettings", entityId: "1", meta: { label: section } });
   return { ok: true };
-}
-
-/**
- * Danger zone (spec §6): delete everything flagged isSample (sample editions
- * with their genres and honorees; sample media, videos, albums and news),
- * delete fictional sample artists, clear Site Settings references to it, and
- * leave real artists, settings and staff intact.
- */
-export async function removeSampleData(input: unknown): Promise<{ ok: true; removed: Record<string, number> } | Denied | { ok: false; status: 400; error: string }> {
-  const auth = await authorize("SUPER_ADMIN");
-  if (!auth.ok) return auth;
-  if (!z.object({ confirm: z.literal("REMOVE SAMPLE DATA") }).safeParse(input).success) {
-    return { ok: false, status: 400, error: "Type REMOVE SAMPLE DATA to confirm." };
-  }
-  const { removed, media } = await removeSampleRows();
-  const storage = getStorage();
-  for (const m of media) {
-    for (const k of new Set([m.storageKey, ...Object.values((m.variants as Record<string, string> | null) ?? {})])) {
-      await storage.delete(k).catch((e) => console.error("[sample] storage delete failed", k, e));
-    }
-  }
-  invalidate(TAGS_FOR.all());
-  await logActivity({ userId: auth.user.id, action: "remove_sample", entityType: "SampleData", meta: { label: "Removed sample data", ...removed } });
-  return { ok: true, removed };
 }

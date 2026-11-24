@@ -13,17 +13,17 @@
       "violations": []
     },
     {
-      "page": "/awards/2026",
+      "page": "/awards/2097",
       "viewport": 390,
       "violations": []
     },
     {
-      "page": "/awards/2026/classical",
+      "page": "/awards/2097/e2e-music",
       "viewport": 390,
       "violations": []
     },
     {
-      "page": "/honorees/sample-artist-1a-sample",
+      "page": "/honorees/e2e-honoree-one-e2e-music-2097",
       "viewport": 390,
       "violations": []
     },
@@ -38,12 +38,12 @@
       "violations": []
     },
     {
-      "page": "/artists/mulatu-astatke",
+      "page": "/artists/e2e-legend",
       "viewport": 390,
       "violations": []
     },
     {
-      "page": "/artists/sample-artist-1a",
+      "page": "/artists/e2e-honoree-one",
       "viewport": 390,
       "violations": []
     },
@@ -58,7 +58,7 @@
       "violations": []
     },
     {
-      "page": "/gallery/red-carpet",
+      "page": "/gallery/e2e-album",
       "viewport": 390,
       "violations": []
     },
@@ -108,17 +108,17 @@
       "violations": []
     },
     {
-      "page": "/awards/2026",
+      "page": "/awards/2097",
       "viewport": 1440,
       "violations": []
     },
     {
-      "page": "/awards/2026/classical",
+      "page": "/awards/2097/e2e-music",
       "viewport": 1440,
       "violations": []
     },
     {
-      "page": "/honorees/sample-artist-1a-sample",
+      "page": "/honorees/e2e-honoree-one-e2e-music-2097",
       "viewport": 1440,
       "violations": []
     },
@@ -133,12 +133,12 @@
       "violations": []
     },
     {
-      "page": "/artists/mulatu-astatke",
+      "page": "/artists/e2e-legend",
       "viewport": 1440,
       "violations": []
     },
     {
-      "page": "/artists/sample-artist-1a",
+      "page": "/artists/e2e-honoree-one",
       "viewport": 1440,
       "violations": []
     },
@@ -153,7 +153,7 @@
       "violations": []
     },
     {
-      "page": "/gallery/red-carpet",
+      "page": "/gallery/e2e-album",
       "viewport": 1440,
       "violations": []
     },

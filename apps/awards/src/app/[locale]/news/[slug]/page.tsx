@@ -27,7 +27,7 @@ export default async function NewsPostPage({ params }: PageProps<"/[locale]/news
   setRequestLocale(locale);
   const post = await getNewsPost(slug);
   if (!post) notFound();
-  const [t, tc, tn, format] = await Promise.all([getTranslations("news"), getTranslations("common"), getTranslations("honoree"), getFormatter()]);
+  const [t, tc, format] = await Promise.all([getTranslations("news"), getTranslations("common"), getFormatter()]);
   const url = `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001"}/news/${slug}`;
 
   return (
@@ -46,7 +46,7 @@ export default async function NewsPostPage({ params }: PageProps<"/[locale]/news
                 <Chip size="sm">{t("edition", { year: post.edition.year })}</Chip>
               </Link>
             ) : null}
-            {post.isSample ? <Chip size="sm" variant="sample">{tn("sample")}</Chip> : null}
+            
             {post.tags.map((tag) => (
               <Chip key={tag} size="sm" variant="muted">
                 {tag}

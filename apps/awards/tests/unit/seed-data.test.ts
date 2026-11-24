@@ -1,34 +1,19 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { GENRES, honoreesFor, SAMPLE_CITATION } from "../../prisma/seed/edition";
-import { artworks } from "../../prisma/seed/artwork";
-import { PUBLISHED_ARTISTS } from "../../prisma/seed/artists";
+import { NEWS } from "../../prisma/seed/content";
 
-describe("sample edition (A-76)", () => {
-  it("has six sample genres with Amharic names", () => {
-    expect(GENRES.map((g) => g.nameEn)).toEqual(["Classical", "Ethio-jazz", "Tizita", "Bati", "Afrobeat", "Traditional"]);
-    for (const g of GENRES) expect(g.nameAm).toMatch(/\p{Script=Ethiopic}/u);
+const seed = readFileSync(path.resolve(__dirname, "../../prisma/seed.ts"), "utf8");
+
+describe("seed (A-81: staff, welcome post and settings only)", () => {
+  it("creates no artists, media, editions, honorees, albums or videos", () => {
+    for (const model of ["artist", "media", "awardEdition", "awardCategory", "nominee", "album", "video"]) {
+      expect(seed, model).not.toMatch(new RegExp(`prisma\\.${model}\\.(create|upsert)`));
+    }
   });
 
-  it("honors only fictional sample artists (never a real person)", () => {
-    const all = GENRES.flatMap(honoreesFor);
-    expect(all).toHaveLength(GENRES.reduce((n, g) => n + g.honorees, 0));
-    for (const h of all) expect(h.artistName).toMatch(/^Sample Artist \d[A-D]$/);
-    const real = new Set(PUBLISHED_ARTISTS.map((a) => a.nameEn));
-    for (const h of all) expect(real.has(h.artistName)).toBe(false);
-    expect(new Set(all.map((h) => h.slug)).size).toBe(all.length);
-    expect(SAMPLE_CITATION).toMatch(/^Sample/);
-  });
-});
-
-describe("artists and artwork", () => {
-  it("13 published artists, none named like sample data", () => {
-    expect(PUBLISHED_ARTISTS).toHaveLength(13);
-    for (const a of PUBLISHED_ARTISTS) expect(a.nameEn).not.toMatch(/^Sample/);
-  });
-  it("12 text-free artworks in Red Carpet / Awards Night / Backstage", () => {
-    const arts = artworks();
-    expect(arts).toHaveLength(12);
-    for (const a of arts) expect(a.svg).not.toMatch(/<text/i);
-    expect([...new Set(arts.map((a) => a.album))]).toEqual(["red-carpet", "awards-night", "backstage"]);
+  it("ships only the published welcome post", () => {
+    expect(NEWS.map((n) => n.status)).toEqual(["PUBLISHED"]);
+    expect(JSON.stringify(NEWS)).not.toMatch(/sample/i);
   });
 });

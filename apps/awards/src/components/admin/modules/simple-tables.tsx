@@ -48,7 +48,7 @@ export function VideosTable({ rows, sort }: { rows: VideoRow[]; sort: { key: str
 }
 
 /* Albums */
-export type AlbumRow = { id: string; slug: string; titleEn: string; status: Status; isSample: boolean; updatedAt: Date; cover: Thumb; _count: { items: number } };
+export type AlbumRow = { id: string; slug: string; titleEn: string; status: Status; updatedAt: Date; cover: Thumb; _count: { items: number } };
 const albumCols: ColumnDef<AlbumRow, unknown>[] = [
   {
     id: "title",
@@ -57,7 +57,6 @@ const albumCols: ColumnDef<AlbumRow, unknown>[] = [
       <Link href={`/admin/gallery/${a.id}`} className="flex items-center gap-3 hover:text-gold">
         <MediaThumb media={a.cover ? { ...a.cover, type: "IMAGE" } : null} className="size-10 shrink-0 rounded" />
         <span className="font-medium">{a.titleEn}</span>
-        {a.isSample ? <Chip size="sm" variant="muted">Sample</Chip> : null}
       </Link>
     ),
   },
@@ -71,7 +70,7 @@ export function AlbumsTable({ rows, sort }: { rows: AlbumRow[]; sort: { key: str
 }
 
 /* News */
-export type NewsRow = { id: string; slug: string; titleEn: string; status: Status; featured: boolean; isSample: boolean; publishedAt: Date | null; updatedAt: Date; tags: string[]; cover: Thumb; author: { name: string } | null };
+export type NewsRow = { id: string; slug: string; titleEn: string; status: Status; featured: boolean; publishedAt: Date | null; updatedAt: Date; tags: string[]; cover: Thumb; author: { name: string } | null };
 const newsCols: ColumnDef<NewsRow, unknown>[] = [
   {
     id: "title",
@@ -93,7 +92,6 @@ const newsCols: ColumnDef<NewsRow, unknown>[] = [
       <span className="flex gap-1">
         <StatusBadge status={n.status} scheduled={!!n.publishedAt && new Date(n.publishedAt) > new Date()} />
         {n.featured ? <Chip size="sm" variant="gold">Featured</Chip> : null}
-        {n.isSample ? <Chip size="sm" variant="muted">Sample</Chip> : null}
       </span>
     ),
   },

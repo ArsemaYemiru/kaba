@@ -50,7 +50,6 @@ type Card = {
   image?: string | null;
   /** Initials / ፈታ shown when there's no image. */
   fallback?: string;
-  sample?: boolean;
 };
 
 export async function ogCard(c: Card) {
@@ -62,7 +61,6 @@ export async function ogCard(c: Card) {
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
             <span style={{ fontFamily: "Noto Sans Ethiopic", fontSize: 46, color: "#FFB800" }}>ፈታ</span>
             <span style={{ fontFamily: "Unbounded", fontSize: 22, letterSpacing: 6, color: "#FFB800" }}>FETA AWARDS</span>
-            {c.sample ? <span style={{ marginLeft: 12, fontSize: 18, padding: "4px 12px", borderRadius: 999, border: "2px dashed #6B6B75", color: "#A1A1AA" }}>Sample</span> : null}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: c.image || c.fallback ? 680 : 1060 }}>
             <span style={{ fontFamily: "Unbounded", fontSize: 24, letterSpacing: 5, color: "#FFB800" }}>{c.kicker.toUpperCase()}</span>

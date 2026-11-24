@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Chip } from "@/components/brand/chip";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -251,7 +250,7 @@ function MediaEditDialog({ item, onClose }: { item: LibraryItem; onClose: () => 
               ) : (
                 <p className="text-xs text-muted-foreground">Not used anywhere.</p>
               )}
-              {item.tags.includes("sample") ? <Chip size="sm" variant="muted" className="mt-2">Sample</Chip> : null}
+              
             </div>
           </div>
         </div>

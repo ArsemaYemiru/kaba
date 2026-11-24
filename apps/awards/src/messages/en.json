@@ -85,8 +85,6 @@
     "pagination": "Pagination",
     "openImage": "Open image: {alt}",
     "clearSearch": "Clear search",
-    "sample": "Sample",
-    "sampleNotice": "Sample data: fictional artists shown for demonstration until the organizers add the real honorees.",
     "eat": "EAT",
     "tbc": "To be confirmed",
     "share": "Share",
@@ -271,10 +269,10 @@
     "continue": "Continue"
   },
   "honoree": {
-    "sample": "Sample",
     "legend": "Legend",
     "featuredWork": "Featured work: {work}",
     "readCitation": "Read the citation",
+    "viewHonoree": "View honoree",
     "recognizedIn": "{genre} · {year}"
   },
   "honoreePage": {

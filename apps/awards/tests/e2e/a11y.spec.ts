@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { gotoReady, settle } from "./helpers";
+import { FX, GENRE_URL, HONOREE_URL } from "./fixture";
 import { createStaff, deleteTestStaff } from "./staff";
 
 /**
@@ -34,10 +35,10 @@ test.afterAll(async () => {
   await deleteTestStaff(RUN);
 });
 
-const year = new Intl.DateTimeFormat("en", { year: "numeric", timeZone: "Africa/Addis_Ababa" }).format(new Date());
+const year = FX.year;
 const PUBLIC = [
-  "/", `/awards/${year}`, `/awards/${year}/classical`, "/honorees/sample-artist-1a-sample", "/awards/archive", "/artists", "/artists/mulatu-astatke", "/artists/sample-artist-1a",
-  "/videos", "/gallery", "/gallery/red-carpet", "/news", "/news/welcome-to-the-official-feta-awards-website", "/about", "/privacy", "/terms", "/sign-in", "/forgot-password", "/no-such-page",
+  "/", `/awards/${year}`, GENRE_URL, HONOREE_URL, "/awards/archive", "/artists", `/artists/${FX.legend.slug}`, `/artists/${FX.honorees[0].slug}`,
+  "/videos", "/gallery", `/gallery/${FX.album.slug}`, "/news", "/news/welcome-to-the-official-feta-awards-website", "/about", "/privacy", "/terms", "/sign-in", "/forgot-password", "/no-such-page",
 ];
 
 for (const width of [390, 1440]) {

@@ -128,7 +128,6 @@ export async function getArtist(slug: string) {
           workTitleAm: true,
           blurbEn: true,
           blurbAm: true,
-          isSample: true,
           category: { select: { slug: true, nameEn: true, nameAm: true, edition: { select: { slug: true, year: true, nameEn: true } } } },
         },
       },

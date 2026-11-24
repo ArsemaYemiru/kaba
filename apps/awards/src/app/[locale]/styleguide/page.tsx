@@ -55,7 +55,7 @@ export default async function StyleguidePage({ params }: PageProps<"/[locale]/st
         <h1 className="mt-3 font-display text-h1 font-extrabold">Styleguide</h1>
         <p className="mt-4 text-muted-foreground">
           Every Feta Awards component. Hidden: not linked, not indexed, and disabled in production unless{" "}
-          <code className="rounded bg-surface-2 px-1.5 py-0.5 text-sm">ENABLE_STYLEGUIDE=1</code>. All honoree examples are fictional sample data.
+          <code className="rounded bg-surface-2 px-1.5 py-0.5 text-sm">ENABLE_STYLEGUIDE=1</code>..
         </p>
         <nav aria-label="Styleguide sections" className="mt-6">
           <ul className="flex flex-wrap gap-2">
@@ -164,7 +164,6 @@ export default async function StyleguidePage({ params }: PageProps<"/[locale]/st
           <Chip variant="legend">{ta("legend")}</Chip>
           <Chip variant="red">Red</Chip>
           <Chip variant="foil">Foil</Chip>
-          <Chip variant="sample">Sample</Chip>
           <Chip variant="green">Published</Chip>
         </div>
       </Section>
@@ -179,10 +178,10 @@ export default async function StyleguidePage({ params }: PageProps<"/[locale]/st
 
       <Section id="categories" title="Genre cards">
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <li><CategoryCard name="Classical" icon="music" description="Sample genre description." honoreeCountLabel={tc("honorees", { count: 6 })} href="/styleguide#categories" sample /></li>
-          <li><CategoryCard name="Bati" icon="mic-vocal" honoreeCountLabel={tc("honorees", { count: 4 })} href="/styleguide#categories" sample /></li>
-          <li><CategoryCard name="Afrobeat" icon="disc-3" honoreeCountLabel={tc("honorees", { count: 1 })} href="/styleguide#categories" sample /></li>
-          <li><CategoryCard name="Ethio-jazz" icon="crown" honoreeCountLabel={tc("honorees", { count: 0 })} href="/styleguide#categories" sample /></li>
+          <li><CategoryCard name="Classical" icon="music" description="Sample genre description." honoreeCountLabel={tc("honorees", { count: 6 })} href="/styleguide#categories" /></li>
+          <li><CategoryCard name="Bati" icon="mic-vocal" honoreeCountLabel={tc("honorees", { count: 4 })} href="/styleguide#categories" /></li>
+          <li><CategoryCard name="Afrobeat" icon="disc-3" honoreeCountLabel={tc("honorees", { count: 1 })} href="/styleguide#categories" /></li>
+          <li><CategoryCard name="Ethio-jazz" icon="crown" honoreeCountLabel={tc("honorees", { count: 0 })} href="/styleguide#categories" /></li>
         </ul>
       </Section>
 
@@ -193,7 +192,7 @@ export default async function StyleguidePage({ params }: PageProps<"/[locale]/st
           <li><ArtistCard nameEn="Teddy Afro" nameAm="ቴዲ አፍሮ" categories={[ta("categories.SINGER")]} /></li>
           <li><ArtistCard nameEn="Sample Artist 6A" categories={[ta("categories.SINGER")]} honored honoredLabel={ta("honoree")} /></li>
         </ul>
-        <p className="mt-3 text-xs text-muted-foreground">The honoree badge is shown only on sample names here: real artists show it only once an admin honors them in an announced edition.</p>
+        <p className="mt-3 text-xs text-muted-foreground">Real artists show the honoree badge once an admin honors them in an announced edition.</p>
       </Section>
 
       <Section id="fallbacks" title="Fallbacks">

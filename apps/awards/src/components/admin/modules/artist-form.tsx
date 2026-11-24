@@ -71,6 +71,7 @@ export function ArtistForm({
         previewHref={publishedSlug ? `/artists/${publishedSlug}` : null}
         editHref={(newId) => `/admin/artists/${newId}`}
         onSave={(v) => saveArtist(id, v)}
+        deleteMessage="Their Feta Awards honors are removed too; photos stay in the Media Library."
         onDelete={id ? async () => {
           const r = await deleteArtist(id);
           return r.ok ? { ok: true } : { ok: false, error: r.error };

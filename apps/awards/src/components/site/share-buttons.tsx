@@ -1,5 +1,6 @@
 "use client";
 
+import { copyText } from "@/lib/clipboard";
 import { Check, Link2 } from "lucide-react";
 import { useState } from "react";
 import { siFacebook, siTelegram, siWhatsapp, siX } from "simple-icons";
@@ -35,12 +36,9 @@ export function ShareButtons({ url, title, labels }: { url: string; title: strin
         className={btn}
         aria-label={copied ? labels.copied : labels.copy}
         onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(url);
+          if (await copyText(url)) {
             setCopied(true);
             window.setTimeout(() => setCopied(false), 2000);
-          } catch {
-            /* clipboard blocked: nothing to do */
           }
         }}
       >

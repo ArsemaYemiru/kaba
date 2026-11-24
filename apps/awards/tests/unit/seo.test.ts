@@ -7,12 +7,11 @@ describe("JSON-LD (spec §10)", () => {
   it("can't break out of the script tag", () => {
     expect(jsonLd({ name: "</script><script>alert(1)</script>" }).__html).not.toContain("</script>");
   });
-  it("only emits an Event once date and venue are set, never for sample editions", () => {
-    const base = { nameEn: "Feta Awards 2027", slug: "2027", ceremonyAt: new Date("2027-03-08T16:00:00Z"), venue: "Venue", isSample: false };
+  it("only emits an Event once date and venue are set", () => {
+    const base = { nameEn: "Feta Awards 2027", slug: "2027", ceremonyAt: new Date("2027-03-08T16:00:00Z"), venue: "Venue" };
     expect(eventLd(base)).toMatchObject({ "@type": "Event", startDate: "2027-03-08T16:00:00.000Z", location: { name: "Venue" } });
     expect(eventLd({ ...base, venue: null })).toBeNull();
     expect(eventLd({ ...base, ceremonyAt: null })).toBeNull();
-    expect(eventLd({ ...base, isSample: true })).toBeNull();
   });
   it("artists: Person vs MusicGroup, nothing invented", () => {
     const a = { slug: "x", nameEn: "X", nameAm: null, stageName: null, isGroup: false, shortBioEn: null, birthYear: null, deathYear: null, genres: [], sameAs: [] };

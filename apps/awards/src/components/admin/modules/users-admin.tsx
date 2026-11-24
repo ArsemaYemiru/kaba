@@ -1,5 +1,6 @@
 "use client";
 
+import { copyText } from "@/lib/clipboard";
 import { KeyRound, Loader2, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -125,7 +126,7 @@ export function ResetPasswordButton({ userId, email }: { userId: string; email: 
           <DialogTitle className="font-display text-lg font-bold">Temporary password</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">Share this with {email} securely. It&apos;s shown only once.</DialogDescription>
           <code className="rounded-md border border-line bg-bg px-3 py-2 font-mono text-base select-all">{shown}</code>
-          <Button onClick={() => { void navigator.clipboard?.writeText(shown ?? ""); toast.success("Copied"); }}>Copy</Button>
+          <Button onClick={() => void copyText(shown ?? "").then((ok) => (ok ? toast.success("Copied") : toast.error("Copy failed: select the text instead.")))}>Copy</Button>
         </DialogContent>
       </Dialog>
     </>

@@ -9,7 +9,6 @@ import { Ticker } from "@/components/brand/ticker";
 import { CategoryGrid } from "@/components/awards/category-grid";
 import { HonoreeCard } from "@/components/awards/honoree-card";
 import { KeyDates } from "@/components/awards/key-dates";
-import { SampleNotice } from "@/components/awards/sample-notice";
 import { ArtistCarousel } from "@/components/site/artist-carousel";
 import { MasonryGallery } from "@/components/site/masonry-gallery";
 import { MediaImage } from "@/components/site/media-image";
@@ -43,12 +42,11 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   setRequestLocale(locale);
 
   const [settings, edition] = await Promise.all([getSettings(), getCurrentEdition()]);
-  const [t, th, ta, tg, tho, tnews, full, featured, featuredArtists, legends, videos, strip, news] = await Promise.all([
+  const [t, th, ta, tg, tnews, full, featured, featuredArtists, legends, videos, strip, news] = await Promise.all([
     getTranslations("home"),
     getTranslations("hero"),
     getTranslations("artist"),
     getTranslations("gallery"),
-    getTranslations("honoree"),
     getTranslations("news"),
     edition ? getEdition(edition.slug) : null,
     edition ? featuredHonorees(settings.featured.nomineeIds) : [],
@@ -105,12 +103,6 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
         actions={actions}
       />
       {ticker.length ? <Ticker items={ticker} label={t("heroKicker", { year: edition?.year ?? "" })} /> : null}
-
-      {edition?.isSample ? (
-        <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6">
-          <SampleNotice />
-        </div>
-      ) : null}
 
       {!edition ? (
         <section className={section}>
@@ -191,7 +183,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
           <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {news.map((p) => (
               <li key={p.slug}>
-                <NewsCard post={p} sampleLabel={tho("sample")} editionLabel={p.edition?.status === "PUBLISHED" ? tnews("edition", { year: p.edition.year }) : undefined} />
+                <NewsCard post={p} editionLabel={p.edition?.status === "PUBLISHED" ? tnews("edition", { year: p.edition.year }) : undefined} />
               </li>
             ))}
           </ul>

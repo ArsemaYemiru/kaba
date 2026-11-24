@@ -5,7 +5,7 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Loader2, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { CATEGORY_ICONS, CategoryIcon } from "@/components/awards/category-icons";
@@ -240,6 +240,7 @@ export function ReorderList({ kind, items }: { kind: "categories" | "honorees"; 
   const [list, setList] = useState(items);
   const [pending, start] = useTransition();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  const dndId = useId(); // stable ids: no SSR hydration mismatch in aria-describedby
   const onDragEnd = (e: DragEndEvent) => {
     if (!e.over || e.active.id === e.over.id) return;
     const from = list.findIndex((x) => x.id === e.active.id);
@@ -255,7 +256,7 @@ export function ReorderList({ kind, items }: { kind: "categories" | "honorees"; 
     });
   };
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+    <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={list.map((x) => x.id)} strategy={verticalListSortingStrategy}>
         <ol className={cn("flex flex-col gap-1.5", pending && "opacity-70")} aria-label={`Drag to reorder ${kind}`}>
           {list.map((x, i) => (

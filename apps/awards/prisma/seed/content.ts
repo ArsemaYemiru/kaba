@@ -1,18 +1,8 @@
-import type { VideoType } from "../../src/generated/prisma/enums";
-
-/** §9.5: sample videos (coming-soon state until a link or upload is added). */
-export const VIDEOS: { title: string; type: VideoType }[] = [
-  { title: "Red carpet highlights", type: "RED_CARPET" },
-  { title: "Awards night performances", type: "PERFORMANCE" },
-  { title: "Honoree interviews", type: "INTERVIEW" },
-];
-
 /** §9.7. No invented dates, venues, prizes or announcements. */
 export const NEWS = [
   {
     title: "Welcome to the official Feta Awards website",
     status: "PUBLISHED" as const,
-    isSample: false,
     featured: true,
     tags: ["announcement"],
     excerpt: "Feta Awards recognizes Ethiopian artists across every genre. Here's how the site works.",
@@ -25,24 +15,6 @@ export const NEWS = [
 <li><a href="/artists">Artists</a>: profiles of the faces and voices of Ethiopian music.</li>
 <li><a href="/awards/archive">The archive</a>: every past edition.</li>
 </ul>`,
-  },
-  {
-    title: "Honorees announced",
-    status: "DRAFT" as const,
-    isSample: true,
-    featured: false,
-    tags: ["honorees"],
-    excerpt: "Sample draft: introduce this edition's genres and honored artists.",
-    body: `<p>Sample draft. Use this post to introduce the genres and honored artists once the official list is confirmed, and link to the <a href="/awards">awards pages</a>.</p>`,
-  },
-  {
-    title: "Awards night: date and venue",
-    status: "DRAFT" as const,
-    isSample: true,
-    featured: false,
-    tags: ["awards night"],
-    excerpt: "Sample draft: publish once the organizers confirm the date and venue.",
-    body: `<p>Sample draft. Publish this post once the organizers confirm the awards night date, venue and broadcast partner.</p>`,
   },
 ];
 

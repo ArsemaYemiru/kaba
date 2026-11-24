@@ -55,7 +55,6 @@ export const auth = betterAuth({
       isActive: { type: "boolean", input: false, defaultValue: true },
       lastLoginAt: { type: "date", input: false, required: false },
       mustChangePassword: { type: "boolean", input: false, defaultValue: false },
-      isSample: { type: "boolean", input: false, defaultValue: false },
     },
   },
   databaseHooks: {
@@ -73,7 +72,6 @@ export const auth = betterAuth({
               role: (user as { role?: string }).role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "EDITOR",
               emailNormalized,
               displayName: ((user as { displayName?: string }).displayName || user.name).slice(0, 60),
-              isSample: false,
               mustChangePassword: (user as { mustChangePassword?: boolean }).mustChangePassword ?? true,
               isActive: true,
             },

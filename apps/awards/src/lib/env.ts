@@ -38,7 +38,7 @@ const EnvSchema = z
     R2_BUCKET: z.string().optional(),
     R2_PUBLIC_URL: z.string().optional(),
 
-    UPLOAD_MAX_IMAGE_MB: mb(10),
+    UPLOAD_MAX_IMAGE_MB: mb(40),
     UPLOAD_MAX_VIDEO_MB: mb(1024),
     ANALYTICS_PROVIDER: z.enum(["plausible", "umami", ""]).optional(),
     ANALYTICS_SITE_ID: z.string().optional(),

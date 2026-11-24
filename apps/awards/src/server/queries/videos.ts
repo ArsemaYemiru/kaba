@@ -18,7 +18,6 @@ export const videoCardSelect = {
   captionsUrl: true,
   media: { select: mediaSelect },
   poster: { select: mediaSelect },
-  isSample: true,
   edition: { select: { slug: true, year: true, status: true } },
 } satisfies Prisma.VideoSelect;
 

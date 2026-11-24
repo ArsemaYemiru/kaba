@@ -11,15 +11,15 @@ export function organizationLd(o: { logoUrl?: string | null; sameAs: string[]; e
     name: "Feta Awards",
     alternateName: "ፈታ",
     url: SITE_URL,
-    logo: abs(o.logoUrl) ?? abs("/icon.svg"),
+    logo: abs(o.logoUrl) ?? abs("/icon.png"),
     sameAs: o.sameAs,
     email: o.email || undefined,
   });
 }
 
 /** Awards night: only once both the date and the venue are set (never invented). */
-export function eventLd(e: { nameEn: string; slug: string; ceremonyAt: Date | null; venue: string | null; isSample: boolean }) {
-  if (!e.ceremonyAt || !e.venue || e.isSample) return null;
+export function eventLd(e: { nameEn: string; slug: string; ceremonyAt: Date | null; venue: string | null }) {
+  if (!e.ceremonyAt || !e.venue) return null;
   return {
     "@context": "https://schema.org",
     "@type": "Event",

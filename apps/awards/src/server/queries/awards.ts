@@ -23,7 +23,6 @@ export const editionSelect = {
   ceremonyAt: true,
   venue: true,
   broadcastPartner: true,
-  isSample: true,
   updatedAt: true,
   heroMedia: { select: mediaSelect },
 } satisfies Prisma.AwardEditionSelect;
@@ -39,7 +38,6 @@ export const honoreeSelect = {
   blurbEn: true,
   blurbAm: true,
   youtubeUrl: true,
-  isSample: true,
   sortOrder: true,
   image: { select: mediaSelect },
   artist: { select: { id: true, slug: true, nameEn: true, nameAm: true, isLegend: true, isGroup: true, categories: true, portrait: { select: mediaSelect } } },
@@ -55,7 +53,6 @@ const categorySelect = {
   descriptionAm: true,
   icon: true,
   sortOrder: true,
-  isSample: true,
   _count: { select: { nominees: { where: publicHonoree } } },
 } satisfies Prisma.AwardCategorySelect;
 export type CategoryData = Prisma.AwardCategoryGetPayload<{ select: typeof categorySelect }>;

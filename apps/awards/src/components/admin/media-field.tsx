@@ -71,6 +71,7 @@ export function MediaListField({ name, label, hint }: { name: string; label: str
   const { media, remember } = useMediaLookup();
   const [open, setOpen] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  const dndId = useId(); // stable ids: no SSR hydration mismatch in aria-describedby
   return (
     <Controller
       control={control}
@@ -92,7 +93,7 @@ export function MediaListField({ name, label, hint }: { name: string; label: str
               </Button>
             </div>
             {ids.length ? (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+              <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
                 <SortableContext items={ids} strategy={rectSortingStrategy}>
                   <ul className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                     {ids.map((mid) => (

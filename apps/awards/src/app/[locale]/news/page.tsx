@@ -17,7 +17,7 @@ export default async function NewsPage({ params }: PageProps<"/[locale]/news">) 
   await connection();
   const { locale } = await params;
   setRequestLocale(locale);
-  const [t, tc, format, posts] = await Promise.all([getTranslations("news"), getTranslations("common"), getFormatter(), listNews()]);
+  const [t, format, posts] = await Promise.all([getTranslations("news"), getFormatter(), listNews()]);
   return (
     <>
       <PageHeader title={t("title")} intro={t("intro")} />
@@ -44,7 +44,7 @@ export default async function NewsPage({ params }: PageProps<"/[locale]/news">) 
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         {p.publishedAt ? <time dateTime={p.publishedAt.toISOString()}>{format.dateTime(p.publishedAt, { dateStyle: "long", timeZone: "Africa/Addis_Ababa" })}</time> : null}
                         {p.edition?.status === "PUBLISHED" ? <Chip size="sm">{t("edition", { year: p.edition.year })}</Chip> : null}
-                        {p.isSample ? <Chip size="sm" variant="sample">{tc("sample")}</Chip> : null}
+                        
                         {p.tags.slice(0, 2).map((tag) => (
                           <Chip key={tag} size="sm" variant="muted">
                             {tag}
