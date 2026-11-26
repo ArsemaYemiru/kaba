@@ -1,83 +1,95 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import trophy from "./trophy.png";
+import fetaLogo from "./feta-logo.png";
+import fetaMark from "./feta-mark.png";
 
 /**
- * Logo: the gold microphone trophy beside "ፈታ" in Ethiopic 900 with "FETA AWARDS"
- * in Unbounded beneath, and optionally the edition year in gold foil (spec §3.4).
- * The hero shows the trophy above the type.
+ * Official Feta Music Award logo (from feta.png):
+ * - hero & md: full emblem + "FETA MUSIC AWARD" + Amharic tagline lockup
+ * - sm: compact emblem beside crisp "FETA / MUSIC AWARD" typography for navbars
  */
 export function Wordmark({
   size = "sm",
   className,
   subtitle = true,
   year,
-  trophy: showTrophy = true,
+  compact = false,
 }: {
   size?: "sm" | "md" | "hero";
   className?: string;
   subtitle?: boolean;
   /** Edition year in gold foil (hero only). */
   year?: number | null;
-  /** The trophy mark (decorative: the type carries the name). */
-  trophy?: boolean;
+  /** Show only the emblem mark (e.g., collapsed admin sidebar). */
+  compact?: boolean;
 }) {
-  const type = (
-    <span className={cn("inline-flex flex-col items-center leading-none", !showTrophy && className)}>
-      <span
-        lang="am"
-        className={cn(
-          "font-ethiopic font-black text-foreground",
-          size === "sm" && "text-[1.75rem] leading-none!",
-          size === "md" && "text-5xl leading-none!",
-          size === "hero" && "text-[clamp(6rem,4rem+14vw,13rem)] leading-[0.9]! drop-shadow-[0_0_60px_rgba(255,184,0,0.25)]",
-        )}
-      >
-        ፈታ
-      </span>
-      {subtitle ? (
-        <span
-          className={cn(
-            "font-display font-bold text-gold",
-            size === "sm" && "mt-0.5 text-[0.5rem] tracking-[0.32em]",
-            size === "md" && "mt-1 text-xs tracking-[0.4em]",
-            size === "hero" && "mt-2 text-[clamp(0.9rem,0.7rem+1vw,1.5rem)] tracking-[0.5em]",
-          )}
-        >
-          FETA AWARDS
-        </span>
-      ) : null}
-      {year ? (
-        <span
-          className={cn(
-            "foil-text font-display font-extrabold tabular-nums",
-            size === "hero" ? "mt-3 text-[clamp(2rem,1.4rem+3vw,3.5rem)] leading-none tracking-[0.12em]" : "mt-1 text-lg",
-          )}
-        >
-          {year}
-        </span>
-      ) : null}
-    </span>
-  );
-  if (!showTrophy) return type;
   if (size === "hero") {
     return (
-      <span className={cn("inline-flex flex-col items-center", className)}>
+      <span className={cn("inline-flex flex-col items-center leading-none", className)}>
         <Image
-          src={trophy}
+          src={fetaLogo}
           alt=""
           priority
-          sizes="(min-width: 640px) 112px, 80px"
-          className="mb-2 h-28 w-auto drop-shadow-[0_0_40px_rgba(255,184,0,0.35)] sm:h-40"
+          sizes="(min-width: 768px) 340px, 240px"
+          className="h-52 w-auto mix-blend-lighten drop-shadow-[0_0_48px_rgba(222,196,38,0.22)] sm:h-64 md:h-72"
         />
-        {type}
+        {year ? (
+          <span className="foil-text mt-3 font-display text-[clamp(2rem,1.4rem+3vw,3.5rem)] leading-none font-extrabold tracking-[0.12em] tabular-nums">
+            {year}
+          </span>
+        ) : null}
       </span>
     );
   }
+
+  if (size === "md") {
+    return (
+      <span className={cn("inline-flex flex-col items-center leading-none", className)}>
+        <Image
+          src={fetaLogo}
+          alt="Feta Music Award"
+          sizes="160px"
+          className="h-28 w-auto mix-blend-lighten"
+        />
+        {year ? (
+          <span className="foil-text mt-2 font-display text-lg leading-none font-extrabold tabular-nums">
+            {year}
+          </span>
+        ) : null}
+      </span>
+    );
+  }
+
+  if (compact) {
+    return (
+      <Image
+        src={fetaMark}
+        alt=""
+        sizes="36px"
+        className={cn("h-9 w-auto shrink-0 mix-blend-lighten", className)}
+      />
+    );
+  }
+
   return (
-    <span className={cn("inline-flex items-center", size === "sm" ? "gap-1.5" : "gap-3", className)}>
-      <Image src={trophy} alt="" sizes={size === "sm" ? "24px" : "40px"} className={cn("w-auto shrink-0", size === "sm" ? "h-9" : "h-16")} />
-      {type}
+    <span className={cn("inline-flex items-center gap-2 leading-none", className)}>
+      <Image
+        src={fetaMark}
+        alt=""
+        priority
+        sizes="32px"
+        className="h-9 w-auto shrink-0 mix-blend-lighten"
+      />
+      <span className="inline-flex flex-col leading-none">
+        <span className="font-display text-base font-extrabold tracking-[0.12em] text-foreground">
+          FETA
+        </span>
+        {subtitle ? (
+          <span className="mt-0.5 font-display text-[0.5rem] font-bold tracking-[0.26em] text-gold">
+            MUSIC AWARD
+          </span>
+        ) : null}
+      </span>
     </span>
   );
 }

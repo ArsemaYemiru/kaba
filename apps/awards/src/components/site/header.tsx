@@ -15,7 +15,7 @@ export function Header({ logo }: { logo?: MediaLite }) {
         <Link href="/" className="flex shrink-0 flex-col items-center gap-1 rounded-md">
           {logo ? (
             <span className="relative block h-9 w-28">
-              <MediaImage media={logo} alt="Feta Awards" sizes="112px" fill priority className="object-contain" />
+              <MediaImage media={logo} alt="Feta Awards" sizes="112px" fill priority className="object-contain mix-blend-lighten" />
             </span>
           ) : (
             <Wordmark size="sm" />
