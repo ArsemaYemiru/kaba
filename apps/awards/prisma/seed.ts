@@ -1,9 +1,10 @@
 /**
  * Feta Awards seed (spec §9). Idempotent: rows are created when missing and
  * never overwritten, so staff edits survive a re-run. It creates only what the
- * admin needs to start: the two staff accounts, the welcome post and default
- * site settings. Artists, photos, editions and honorees are all added in the
- * admin (A-81). Production refuses default passwords.
+ * admin needs to start: the two staff accounts, the welcome post, default site
+ * settings and, once, the starter showcase (artists, the 2026 edition, genres,
+ * honorees, an album and news; photos are added in the admin). Production
+ * refuses default passwords.
  *   pnpm --filter awards db:seed   |   pnpm --filter awards db:reset
  */
 import "./seed/load-env";
@@ -20,6 +21,7 @@ import { slugify } from "../src/lib/slug";
 import am from "../src/messages/am.json";
 import { SiteSettingsSchema, type SiteSettingsData } from "../src/schemas/settings";
 import { ABOUT, FAQ, NEWS, PRIVACY, TERMS } from "./seed/content";
+import { ALBUMS, ARTISTS, EDITION, GENRES, SHOWCASE_NEWS } from "./seed/showcase";
 
 const env = getEnv();
 const PROD = env.NODE_ENV === "production";
@@ -108,6 +110,111 @@ async function seedNews(authorId: string) {
   }
 }
 
+/* ─────────────────────────── showcase ─────────────────────────── */
+
+/**
+ * Starter artists, the 2026 edition, its genres and honorees, a gallery album and
+ * news (prisma/seed/showcase.ts). Runs once: if any of these artists already
+ * exists, staff own the content and nothing is created or recreated, so admin
+ * edits and deletions stick. All in one transaction, so a failure leaves nothing half-made.
+ */
+async function seedShowcase(authorId: string) {
+  const slugs = ARTISTS.map((a) => a.slug);
+  if (await prisma.artist.count({ where: { slug: { in: slugs } } })) {
+    count("Showcase (already seeded, skipped)", false);
+    return;
+  }
+  await prisma.$transaction(
+    async (tx) => {
+      const artistIds: Record<string, string> = {};
+      for (const [i, a] of ARTISTS.entries()) {
+        const row = await tx.artist.create({
+          data: {
+            slug: a.slug,
+            nameEn: a.nameEn,
+            nameAm: a.nameAm,
+            stageName: a.stageName ?? null,
+            legalNameEn: a.legalNameEn ?? null,
+            categories: a.categories,
+            genres: a.genres,
+            birthYear: a.birthYear ?? null,
+            yearsActive: a.yearsActive ?? null,
+            shortBioEn: a.shortBioEn,
+            bioEn: a.bioEn,
+            notableWorks: a.notableWorks,
+            isLegend: a.isLegend ?? false,
+            featured: a.featured ?? false,
+            status: a.status,
+            sortOrder: (i + 1) * 10,
+          },
+        });
+        artistIds[a.slug] = row.id;
+      }
+      count("Artist", true, ARTISTS.length);
+
+      const edition =
+        (await tx.awardEdition.findUnique({ where: { year: EDITION.year } })) ??
+        (await tx.awardEdition.create({ data: EDITION }));
+
+      for (const [gi, g] of GENRES.entries()) {
+        const category =
+          (await tx.awardCategory.findUnique({ where: { editionId_slug: { editionId: edition.id, slug: g.slug } } })) ??
+          (await tx.awardCategory.create({
+            data: { editionId: edition.id, slug: g.slug, nameEn: g.nameEn, nameAm: g.nameAm, descriptionEn: g.descriptionEn, icon: g.icon, sortOrder: (gi + 1) * 10, status: "PUBLISHED" },
+          }));
+        count("AwardCategory", true);
+        for (const [hi, h] of g.honorees.entries()) {
+          const artist = ARTISTS.find((a) => a.slug === h.artist)!;
+          await tx.nominee.create({
+            data: {
+              categoryId: category.id,
+              artistId: artistIds[h.artist]!,
+              slug: `${EDITION.year}-${g.slug}-${h.artist}`,
+              displayNameEn: artist.nameEn,
+              displayNameAm: artist.nameAm,
+              workTitleEn: h.workTitleEn ?? null,
+              blurbEn: h.blurbEn,
+              sortOrder: (hi + 1) * 10,
+              status: "PUBLISHED",
+            },
+          });
+          count("Honoree", true);
+        }
+      }
+
+      for (const al of ALBUMS) {
+        if (await tx.album.findUnique({ where: { slug: al.slug }, select: { id: true } })) continue;
+        await tx.album.create({
+          data: { slug: al.slug, titleEn: al.titleEn, titleAm: al.titleAm, descriptionEn: al.descriptionEn, status: al.status, editionId: al.edition ? edition.id : null },
+        });
+        count("Album", true);
+      }
+
+      for (const n of SHOWCASE_NEWS) {
+        if (await tx.newsPost.findUnique({ where: { slug: n.slug }, select: { id: true } })) continue;
+        await tx.newsPost.create({
+          data: { slug: n.slug, titleEn: n.title, excerptEn: n.excerpt, bodyEn: n.body, tags: n.tags, featured: n.featured, editionId: n.edition ? edition.id : null, status: "PUBLISHED", publishedAt: new Date(), authorId },
+        });
+        count("NewsPost", true);
+      }
+
+      // Make 2026 the current edition and spotlight the featured artists, unless staff already chose.
+      const settings = await tx.siteSettings.findUnique({ where: { id: 1 }, select: { currentEditionId: true, featured: true } });
+      if (settings) {
+        const featured = (settings.featured ?? {}) as { nomineeIds?: string[]; artistIds?: string[] };
+        await tx.siteSettings.update({
+          where: { id: 1 },
+          data: {
+            currentEditionId: settings.currentEditionId ?? edition.id,
+            featured: { nomineeIds: featured.nomineeIds ?? [], artistIds: featured.artistIds?.length ? featured.artistIds : ARTISTS.filter((a) => a.featured).map((a) => artistIds[a.slug]!) },
+          },
+        });
+      }
+    },
+    { timeout: 60_000 },
+  );
+}
+
 /* ─────────────────────────── settings ─────────────────────────── */
 
 /** Default site settings, created once; everything after that is edited in Site Settings. */
@@ -173,6 +280,7 @@ async function main() {
   await seedNews(staff.SUPER_ADMIN);
   await removeSampleFiles();
   await seedSettings();
+  await seedShowcase(staff.SUPER_ADMIN);
   await summary();
   console.log(`Done in ${((Date.now() - started) / 1000).toFixed(1)}s`);
 }

@@ -75,7 +75,7 @@ export function Sidebar({ isSuperAdmin }: { isSuperAdmin: boolean }) {
     >
       <div className={cn("flex h-14 items-center", collapsed ? "justify-center" : "px-4")}>
         <Link href="/admin" className="flex flex-col items-center gap-0.5">
-          <Wordmark size="sm" subtitle={!collapsed} trophy={!collapsed} />
+          <Wordmark size="sm" subtitle={!collapsed} compact={collapsed} />
           <span className="sr-only">admin dashboard</span>
         </Link>
       </div>
